@@ -1,23 +1,21 @@
-import { ControlSystemSection } from '@/components/landing/control-system-section';
-import { Footer } from '@/components/landing/footer';
-import { FinalCtaSection } from '@/components/landing/final-cta';
+import { FinalCtaSection } from '@/components/landing/final-cta-section';
 import { HeroSection } from '@/components/landing/hero/hero-section';
+import { GrcLifecycleSection } from '@/components/landing/grc-lifecycle-section';
 import { LandingNavbar } from '@/components/landing/landing-navbar';
-import { PlatformLifecycleSection } from '@/components/landing/platform-lifecycle';
-import { AuditShowcaseSection } from '@/components/landing/audit-showcase';
-import { SecuritySection } from '@/components/landing/security-section';
+import { MultiTenantSection } from '@/components/landing/multi-tenant-section';
+import { LandingFooter } from '@/components/landing/landing-footer';
+import { PlatformCapabilitiesSection } from '@/components/landing/platform-capabilities-section';
 
 export default function HomePage() {
   return (
     <main className="min-h-screen bg-bg-app text-text-primary">
       <LandingNavbar />
       <HeroSection />
-      <PlatformLifecycleSection />
-      <ControlSystemSection />
-      <AuditShowcaseSection />
-      <SecuritySection />
+      <GrcLifecycleSection />
+      <MultiTenantSection />
+      <PlatformCapabilitiesSection />
       <FinalCtaSection />
-      <Footer />
+      <LandingFooter />
     </main>
   );
 }
