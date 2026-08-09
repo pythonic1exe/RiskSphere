@@ -2,7 +2,6 @@ import { ArrowRightIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 
 import { DarkVeil } from '@/components/react-bits';
-import { buttonVariants } from '@/components/ui/button';
 
 export function HeroSection() {
   return (
@@ -28,10 +27,6 @@ export function HeroSection() {
               traceability instead of spreadsheets.
             </p>
             <div className="mt-8 flex items-center justify-center gap-6">
-              <Link href="#cta" className={buttonVariants({ size: 'lg' })}>
-                Request demo
-                <ArrowRightIcon className="size-4" />
-              </Link>
               <Link
                 href="#platform"
                 className="inline-flex items-center gap-2 text-sm font-medium text-text-secondary transition-colors hover:text-text-primary"

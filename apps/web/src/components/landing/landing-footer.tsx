@@ -1,14 +1,10 @@
 import Link from 'next/link';
+import { InteractiveHoverButton } from '@/components/ui/interactive-hover-button';
 
 const platformLinks = [
   { label: 'Platform', href: '#platform' },
   { label: 'Capabilities', href: '#capabilities' },
   { label: 'Tenancy', href: '#tenancy' },
-];
-
-const accountLinks = [
-  { label: 'Sign In', href: '/signin' },
-  { label: 'Request Demo', href: '#cta' },
 ];
 
 export function LandingFooter() {
@@ -38,13 +34,13 @@ export function LandingFooter() {
 
           <div>
             <p className="text-[0.65rem] uppercase tracking-[0.2em] text-text-muted">Account</p>
-            <nav className="mt-4 grid gap-3" aria-label="Account footer links">
-              {accountLinks.map((link) => (
-                <Link key={link.href} href={link.href} className="text-sm text-text-secondary transition-colors hover:text-text-primary focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60">
-                  {link.label}
-                </Link>
-              ))}
-            </nav>
+            <div className="mt-4">
+              <Link href="/signin">
+                <InteractiveHoverButton className="h-9 rounded-[12px] border-border-default bg-bg-app/60 px-4 py-0 text-sm text-text-primary hover:border-primary/50 focus-visible:ring-offset-bg-base">
+                  Sign In
+                </InteractiveHoverButton>
+              </Link>
+            </div>
           </div>
         </div>
 
