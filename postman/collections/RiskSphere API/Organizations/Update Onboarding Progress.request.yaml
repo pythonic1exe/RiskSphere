@@ -1,0 +1,14 @@
+$kind: http-request
+url: "{{baseUrl}}/organizations/{{organizationId}}/onboarding"
+method: PATCH
+headers:
+  Authorization: Bearer {{accessToken}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "currentStep": "GRC_GOALS",
+      "lastStep": "ORGANIZATION_SETUP"
+    }
+order: 4000

@@ -1,0 +1,6 @@
+$kind: http-request
+url: "{{baseUrl}}/organizations/{{organizationId}}/onboarding/complete"
+method: POST
+headers:
+  Authorization: Bearer {{accessToken}}
+order: 5000

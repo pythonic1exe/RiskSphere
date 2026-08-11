@@ -1,0 +1,22 @@
+name: RiskSphere Local
+values:
+  - key: baseUrl
+    value: 'http://localhost:4000/api/v1'
+  - key: swaggerUrl
+    value: 'http://localhost:4000/api/docs'
+  - key: accessToken
+    value: ''
+  - key: refreshToken
+    value: ''
+  - key: organizationId
+    value: ''
+  - key: invitationId
+    value: ''
+  - key: inviteToken
+    value: ''
+  - key: frameworkCatalogId
+    value: ''
+  - key: email
+    value: admin@risksphere.com
+  - key: password
+    value: password1234

@@ -1,0 +1,16 @@
+$kind: http-request
+url: "{{baseUrl}}/organizations/{{organizationId}}"
+method: PATCH
+headers:
+  Authorization: Bearer {{accessToken}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "name": "Acme Incorporated",
+      "slug": "acme-inc",
+      "timezone": "Asia/Karachi",
+      "locale": "en-US"
+    }
+order: 3000

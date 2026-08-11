@@ -1,0 +1,22 @@
+$kind: http-request
+url: "{{baseUrl}}/organizations"
+method: POST
+headers:
+  Authorization: Bearer {{accessToken}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "name": "Acme Inc",
+      "slug": "acme-inc",
+      "timezone": "Asia/Karachi",
+      "locale": "en-US"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      const data = pm.response.json();
+      if (data?.organization?.id) pm.environment.set('organizationId', data.organization.id);
+    language: text/javascript
+order: 1000

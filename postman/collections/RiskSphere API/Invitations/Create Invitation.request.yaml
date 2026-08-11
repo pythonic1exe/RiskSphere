@@ -1,0 +1,21 @@
+$kind: http-request
+url: "{{baseUrl}}/organizations/{{organizationId}}/invitations"
+method: POST
+headers:
+  Authorization: Bearer {{accessToken}}
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "email": "jane@acme.com",
+      "roleCode": "VIEWER"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      const data = pm.response.json();
+      if (data?.invitation?.id) pm.environment.set('invitationId', data.invitation.id);
+      if (data?.inviteToken) pm.environment.set('inviteToken', data.inviteToken);
+    language: text/javascript
+order: 1000

@@ -6,3 +6,225 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+enum UserStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum OrganizationStatus {
+  PENDING_ONBOARDING
+  ACTIVE
+  SUSPENDED
+  ARCHIVED
+}
+
+enum MembershipStatus {
+  ACTIVE
+  SUSPENDED
+  REMOVED
+}
+
+enum OrganizationOnboardingStatus {
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum OrganizationOnboardingStep {
+  ORGANIZATION_SETUP
+  GRC_GOALS
+  FRAMEWORKS
+  MEMBERS
+  DEFAULTS
+  REVIEW
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  REVOKED
+  EXPIRED
+}
+
+enum FrameworkCatalogStatus {
+  ACTIVE
+  DEPRECATED
+  HIDDEN
+}
+
+enum SessionStatus {
+  ACTIVE
+  REVOKED
+  EXPIRED
+}
+
+model User {
+  id                    String     @id @default(uuid()) @db.Uuid
+  email                 String     @unique
+  passwordHash          String
+  status                UserStatus  @default(ACTIVE)
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+  memberships           Membership[]
+  sessions              Session[]
+  acceptedInvitations   Invitation[] @relation("InvitationAcceptedByUser")
+
+  @@index([status])
+}
+
+model Session {
+  id               String        @id @default(uuid()) @db.Uuid
+  userId           String        @db.Uuid
+  refreshTokenHash String        @unique
+  status           SessionStatus  @default(ACTIVE)
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([expiresAt])
+}
+
+model Organization {
+  id                    String                       @id @default(uuid()) @db.Uuid
+  slug                  String                       @unique
+  name                  String
+  status                OrganizationStatus           @default(PENDING_ONBOARDING)
+  timezone              String?
+  locale                String?
+  onboardingCompletedAt DateTime?
+  createdAt             DateTime                     @default(now())
+  updatedAt             DateTime                     @updatedAt
+  memberships           Membership[]
+  roles                 Role[]
+  onboarding            OrganizationOnboarding?
+  invitations           Invitation[]
+  frameworkSelections   OrganizationFrameworkSelection[]
+
+  @@index([status, updatedAt])
+}
+
+model Membership {
+  id                   String          @id @default(uuid()) @db.Uuid
+  organizationId       String          @db.Uuid
+  userId               String          @db.Uuid
+  status               MembershipStatus @default(ACTIVE)
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+  organization         Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user                 User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  membershipRoles      MembershipRole[]
+  sentInvitations      Invitation[]    @relation("InvitationInvitedByMembership")
+  acceptedInvitations   Invitation[]    @relation("InvitationAcceptedMembership")
+  revokedInvitations    Invitation[]    @relation("InvitationRevokedByMembership")
+  selectedFrameworkSelections OrganizationFrameworkSelection[] @relation("FrameworkSelectionSelectedByMembership")
+
+  @@unique([organizationId, userId])
+  @@unique([organizationId, id])
+  @@index([organizationId, status])
+  @@index([userId, status])
+}
+
+model Role {
+  id              String           @id @default(uuid()) @db.Uuid
+  organizationId  String           @db.Uuid
+  code            String
+  name            String
+  description     String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  membershipRoles MembershipRole[]
+  invitations     Invitation[]
+
+  @@unique([organizationId, code])
+  @@unique([organizationId, id])
+  @@index([organizationId, code])
+}
+
+model MembershipRole {
+  id             String      @id @default(uuid()) @db.Uuid
+  organizationId String      @db.Uuid
+  membershipId   String      @db.Uuid
+  roleId         String      @db.Uuid
+  createdAt      DateTime    @default(now())
+  membership     Membership  @relation(fields: [organizationId, membershipId], references: [organizationId, id], onDelete: Cascade)
+  role           Role        @relation(fields: [organizationId, roleId], references: [organizationId, id], onDelete: Cascade)
+
+  @@unique([membershipId, roleId])
+  @@index([organizationId, membershipId])
+  @@index([organizationId, roleId])
+}
+
+model OrganizationOnboarding {
+  id            String                      @id @default(uuid()) @db.Uuid
+  organizationId String                     @unique @db.Uuid
+  status        OrganizationOnboardingStatus @default(IN_PROGRESS)
+  currentStep   OrganizationOnboardingStep?
+  lastStep      OrganizationOnboardingStep?
+  completedAt   DateTime?
+  createdAt     DateTime                    @default(now())
+  updatedAt     DateTime                    @updatedAt
+  organization  Organization                @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([status, updatedAt])
+}
+
+model Invitation {
+  id                     String           @id @default(uuid()) @db.Uuid
+  organizationId         String           @db.Uuid
+  invitedByMembershipId  String           @db.Uuid
+  invitedEmail           String
+  invitedEmailNormalized  String
+  tokenHash              String           @unique
+  status                 InvitationStatus @default(PENDING)
+  roleId                 String           @db.Uuid
+  expiresAt              DateTime
+  acceptedAt             DateTime?
+  acceptedByUserId       String?          @db.Uuid
+  acceptedMembershipId   String?          @db.Uuid
+  revokedAt              DateTime?
+  revokedByMembershipId  String?          @db.Uuid
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
+  organization          Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  invitedByMembership   Membership       @relation("InvitationInvitedByMembership", fields: [organizationId, invitedByMembershipId], references: [organizationId, id], onDelete: Cascade)
+  role                  Role             @relation(fields: [organizationId, roleId], references: [organizationId, id], onDelete: Restrict)
+  acceptedByUser        User?            @relation("InvitationAcceptedByUser", fields: [acceptedByUserId], references: [id], onDelete: SetNull)
+  acceptedMembership    Membership?      @relation("InvitationAcceptedMembership", fields: [organizationId, acceptedMembershipId], references: [organizationId, id], onDelete: Restrict)
+  revokedByMembership   Membership?      @relation("InvitationRevokedByMembership", fields: [organizationId, revokedByMembershipId], references: [organizationId, id], onDelete: Restrict)
+
+  @@index([organizationId, invitedEmailNormalized, status])
+  @@index([organizationId, status])
+}
+
+model FrameworkCatalog {
+  id          String                 @id @default(uuid()) @db.Uuid
+  code        String                 @unique
+  name        String
+  description String?
+  status      FrameworkCatalogStatus @default(ACTIVE)
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+  selections  OrganizationFrameworkSelection[]
+
+  @@index([status])
+}
+
+model OrganizationFrameworkSelection {
+  id                    String       @id @default(uuid()) @db.Uuid
+  organizationId        String       @db.Uuid
+  frameworkCatalogId    String       @db.Uuid
+  selectedByMembershipId String?      @db.Uuid
+  selectedAt            DateTime     @default(now())
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  frameworkCatalog     FrameworkCatalog @relation(fields: [frameworkCatalogId], references: [id], onDelete: Restrict)
+  selectedByMembership Membership?  @relation("FrameworkSelectionSelectedByMembership", fields: [organizationId, selectedByMembershipId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, frameworkCatalogId])
+  @@index([organizationId])
+}

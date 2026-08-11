@@ -1,0 +1,6 @@
+$kind: http-request
+url: "{{baseUrl}}/organizations/{{organizationId}}/invitations/{{invitationId}}"
+method: DELETE
+headers:
+  Authorization: Bearer {{accessToken}}
+order: 2000

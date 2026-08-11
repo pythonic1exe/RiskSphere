@@ -1,0 +1,14 @@
+$kind: http-request
+url: "{{baseUrl}}/framework-catalog"
+method: GET
+headers:
+  Authorization: Bearer {{accessToken}}
+scripts:
+  - type: afterResponse
+    code: |-
+      const data = pm.response.json();
+      if (Array.isArray(data?.frameworks) && data.frameworks.length > 0) {
+        pm.environment.set('frameworkCatalogId', data.frameworks[0].id);
+      }
+    language: text/javascript
+order: 1000

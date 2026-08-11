@@ -1,0 +1,6 @@
+$kind: http-request
+url: "{{baseUrl}}/organizations/{{organizationId}}/framework-selections/{{frameworkCatalogId}}"
+method: POST
+headers:
+  Authorization: Bearer {{accessToken}}
+order: 2000

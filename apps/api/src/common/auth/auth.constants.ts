@@ -1,0 +1,25 @@
+export const ACCESS_TOKEN_TYPE = 'access' as const;
+export const REFRESH_TOKEN_TYPE = 'refresh' as const;
+
+export const ORGANIZATION_ROLE_CODES = {
+  OWNER: 'OWNER',
+  GRC_ADMIN: 'GRC_ADMIN',
+  RISK_MANAGER: 'RISK_MANAGER',
+  COMPLIANCE_MANAGER: 'COMPLIANCE_MANAGER',
+  AUDITOR: 'AUDITOR',
+  CONTROL_OWNER: 'CONTROL_OWNER',
+  VIEWER: 'VIEWER',
+} as const;
+
+export type OrganizationRoleCode =
+  (typeof ORGANIZATION_ROLE_CODES)[keyof typeof ORGANIZATION_ROLE_CODES];
+
+export const MANAGE_ORGANIZATION_ROLE_CODES: OrganizationRoleCode[] = [
+  ORGANIZATION_ROLE_CODES.OWNER,
+  ORGANIZATION_ROLE_CODES.GRC_ADMIN,
+];
+
+export const OWNER_ONLY_ROLE_CODES: OrganizationRoleCode[] = [
+  ORGANIZATION_ROLE_CODES.OWNER,
+];
+
