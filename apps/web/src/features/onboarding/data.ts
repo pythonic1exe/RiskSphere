@@ -30,6 +30,7 @@ export const roleOptions: Array<{ value: InvitationRole; label: string }> = [
 ];
 
 export const initialDraft: OnboardingDraft = {
+  organizationId: null,
   currentStep: 'organization',
   organizationName: '',
   workspaceSlug: '',

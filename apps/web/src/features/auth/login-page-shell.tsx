@@ -1,7 +1,9 @@
+import type React from "react"
+
 import { AuthVisualPanel } from "./auth-visual-panel"
 import { LoginForm } from "./login-form"
 
-export function LoginPageShell() {
+export function AuthPageShell({ children }: { children: React.ReactNode }) {
   return (
     <main className="min-h-[100dvh] bg-bg-base text-foreground lg:grid lg:grid-cols-[48%_52%]">
       <section className="hidden min-h-[100dvh] lg:block">
@@ -12,9 +14,13 @@ export function LoginPageShell() {
           RISK<span className="text-primary">SPHERE</span>
         </div>
         <div className="flex flex-1 items-center justify-center py-14 sm:py-16 lg:py-10">
-          <LoginForm />
+          {children}
         </div>
       </section>
     </main>
   )
+}
+
+export function LoginPageShell() {
+  return <AuthPageShell><LoginForm /></AuthPageShell>
 }

@@ -117,6 +117,9 @@ class OrganizationOnboardingSummaryDto {
     pendingInvitations: number;
     selectedFrameworks: number;
   };
+
+  @ApiProperty({ type: [String], format: 'uuid' })
+  selectedFrameworkIds!: string[];
 }
 
 export class CreateOrganizationResponseDto {

@@ -1,6 +1,5 @@
-import { OnboardingProvider } from '@/features/onboarding/state';
-import { OnboardingShell } from '@/features/onboarding/components';
+import { OnboardingEntry } from '@/features/onboarding/onboarding-entry';
 
 export default function OnboardingPage() {
-  return <OnboardingProvider><OnboardingShell /></OnboardingProvider>;
+  return <OnboardingEntry />;
 }

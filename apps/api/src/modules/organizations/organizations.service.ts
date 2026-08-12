@@ -157,17 +157,18 @@ export class OrganizationsService {
       throw new NotFoundException('Organization onboarding not found');
     }
 
-    const [inviteCount, selectedFrameworkCount] = await Promise.all([
+    const [inviteCount, selections] = await Promise.all([
       this.prisma.invitation.count({
         where: {
           organizationId: access.organization.id,
           status: 'PENDING',
         },
       }),
-      this.prisma.organizationFrameworkSelection.count({
+      this.prisma.organizationFrameworkSelection.findMany({
         where: {
           organizationId: access.organization.id,
         },
+        select: { frameworkCatalogId: true },
       }),
     ]);
 
@@ -183,8 +184,9 @@ export class OrganizationsService {
       },
       counts: {
         pendingInvitations: inviteCount,
-        selectedFrameworks: selectedFrameworkCount,
+        selectedFrameworks: selections.length,
       },
+      selectedFrameworkIds: selections.map((selection) => selection.frameworkCatalogId),
     };
   }
 
@@ -322,6 +324,36 @@ export class OrganizationsService {
 
   async getOrganizationAccess(userId: string, organizationId: string) {
     return this.authorizationService.getAccess(userId, organizationId);
+  }
+
+  async getMyOrganizations(userId: string) {
+    const memberships = await this.prisma.membership.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'asc' },
+      include: {
+        organization: { include: { onboarding: true } },
+        membershipRoles: { include: { role: true } },
+      },
+    });
+
+    return {
+      organizations: memberships.map((membership) => ({
+        id: membership.organization.id,
+        name: membership.organization.name,
+        slug: membership.organization.slug,
+        status: membership.organization.status,
+        membershipId: membership.id,
+        membershipStatus: membership.status,
+        onboarding: membership.organization.onboarding
+          ? {
+              status: membership.organization.onboarding.status,
+              currentStep: membership.organization.onboarding.currentStep,
+              lastStep: membership.organization.onboarding.lastStep,
+            }
+          : null,
+        roles: membership.membershipRoles.map(({ role }) => role),
+      })),
+    };
   }
 
   private canCompleteOnboarding(

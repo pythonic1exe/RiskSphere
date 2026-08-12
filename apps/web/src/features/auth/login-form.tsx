@@ -1,6 +1,8 @@
 "use client"
 
 import { useState, type FormEvent } from "react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { motion, useReducedMotion } from "motion/react"
 import { ArrowRight, Eye, EyeOff } from "lucide-react"
 
@@ -9,10 +11,15 @@ import { BorderBeam } from "@/components/ui/border-beam"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
+import { getAuthenticatedDestination, getMyOrganizations } from "./auth-client"
+import { useAuth } from "./auth-provider"
+
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export function LoginForm() {
   const reducedMotion = useReducedMotion()
+  const router = useRouter()
+  const { login, isSubmitting, error, clearError } = useAuth()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
@@ -29,10 +36,17 @@ export function LoginForm() {
   const showPasswordError = submitted || touched.password
   const formIsValid = !emailError && !passwordError
 
-  function handleSubmit(event: FormEvent) {
+  async function handleSubmit(event: FormEvent) {
     event.preventDefault()
     setSubmitted(true)
     setTouched({ email: true, password: true })
+    if (!formIsValid) return
+    try {
+      await login(email, password)
+      router.replace(getAuthenticatedDestination(await getMyOrganizations()))
+    } catch {
+      // AuthProvider exposes the server error inline below the form.
+    }
   }
 
   return (
@@ -62,7 +76,7 @@ export function LoginForm() {
             className="h-12"
             aria-invalid={showEmailError && Boolean(emailError)}
             aria-describedby={showEmailError && emailError ? "signin-email-error" : undefined}
-            onChange={(event) => setEmail(event.target.value)}
+            onChange={(event) => { setEmail(event.target.value); clearError() }}
             onBlur={() => setTouched((current) => ({ ...current, email: true }))}
           />
           {showEmailError && emailError ? <p id="signin-email-error" className="text-xs text-danger" role="alert">{emailError}</p> : null}
@@ -80,7 +94,7 @@ export function LoginForm() {
               className="h-12 pr-11"
               aria-invalid={showPasswordError && Boolean(passwordError)}
               aria-describedby={showPasswordError && passwordError ? "signin-password-error" : undefined}
-              onChange={(event) => setPassword(event.target.value)}
+              onChange={(event) => { setPassword(event.target.value); clearError() }}
               onBlur={() => setTouched((current) => ({ ...current, password: true }))}
             />
             <button
@@ -96,14 +110,13 @@ export function LoginForm() {
           {showPasswordError && passwordError ? <p id="signin-password-error" className="text-xs text-danger" role="alert">{passwordError}</p> : null}
         </div>
 
-        <motion.div
-          {...(reducedMotion ? {} : { whileHover: { y: -1 }, whileTap: { y: 0 } })}
-        >
-          <Button type="submit" size="lg" className="h-12 w-full" disabled={submitted && !formIsValid}>
-            Sign in
-            <ArrowRight className="size-4" aria-hidden="true" />
-          </Button>
+      </div>
+      {error ? <p className="mt-5 rounded-lg border border-danger/30 bg-danger-muted px-3 py-2 text-xs text-danger" role="alert">{error}</p> : null}
+      <div className="mt-6">
+        <motion.div {...(reducedMotion ? {} : { whileHover: { y: -1 }, whileTap: { y: 0 } })}>
+          <Button type="submit" size="lg" className="h-12 w-full" disabled={isSubmitting || (submitted && !formIsValid)}>{isSubmitting ? "Signing in..." : "Sign in"}<ArrowRight className="size-4" aria-hidden="true" /></Button>
         </motion.div>
+        <p className="mt-5 text-center text-sm text-muted-foreground">New organization? <Link href="/onboarding" className="font-medium text-primary hover:text-primary-hover">Start onboarding</Link></p>
       </div>
       <BorderBeam
         duration={8}

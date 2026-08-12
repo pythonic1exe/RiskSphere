@@ -22,7 +22,7 @@ const links = [
   { label: 'Lifecycle', href: '#platform' },
   { label: 'Tenancy', href: '#tenancy' },
   { label: 'Capabilities', href: '#capabilities' },
-  { label: 'Get Started', href: '#cta' },
+  { label: 'Get Started', href: '/onboarding' },
 ];
 
 export function LandingNavbar() {
@@ -191,7 +191,7 @@ export function LandingNavbar() {
           </nav>
 
           <div className="hidden items-center gap-3 lg:flex">
-            <Link href="/signin">
+            <Link href="/login">
               <InteractiveHoverButton className="h-8 rounded-[12px] border-white/10 px-3.5 py-0 text-[0.82rem] text-text-primary/92 hover:border-primary/50 focus-visible:ring-offset-transparent">
                 Sign In
               </InteractiveHoverButton>
@@ -227,7 +227,7 @@ export function LandingNavbar() {
               </div>
               <div className="mt-8 grid gap-3">
                 <Link
-                  href="/signin"
+                  href="/login"
                   className={cn(buttonVariants({ variant: 'outline', size: 'default' }), 'justify-center')}
                 >
                   Sign In

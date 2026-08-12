@@ -35,7 +35,7 @@ export function LandingFooter() {
           <div>
             <p className="text-[0.65rem] uppercase tracking-[0.2em] text-text-muted">Account</p>
             <div className="mt-4">
-              <Link href="/signin">
+              <Link href="/login">
                 <InteractiveHoverButton className="h-9 rounded-[12px] border-border-default bg-bg-app/60 px-4 py-0 text-sm text-text-primary hover:border-primary/50 focus-visible:ring-offset-bg-base">
                   Sign In
                 </InteractiveHoverButton>

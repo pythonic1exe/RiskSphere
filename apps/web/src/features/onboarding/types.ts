@@ -29,6 +29,7 @@ export type WorkspaceDefaults = {
 };
 
 export type OnboardingDraft = {
+  organizationId: string | null;
   currentStep: OnboardingStepId;
   organizationName: string;
   workspaceSlug: string;
@@ -42,6 +43,7 @@ export type OnboardingDraft = {
 };
 
 export type OnboardingAction =
+  | { type: 'set-organization-id'; organizationId: string }
   | { type: 'set-step'; step: OnboardingStepId }
   | { type: 'set-organization-name'; value: string }
   | { type: 'set-workspace-slug'; value: string }

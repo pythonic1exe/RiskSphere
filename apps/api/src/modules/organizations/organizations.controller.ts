@@ -35,6 +35,7 @@ import {
   CreateOrganizationDto,
   CreateOrganizationResponseDto,
   OrganizationOnboardingResponseDto,
+  MyOrganizationsResponseDto,
   UpdateOnboardingProgressDto,
   UpdateOnboardingProgressResponseDto,
   UpdateOrganizationDto,
@@ -45,6 +46,20 @@ import {
 @Controller('organizations')
 export class OrganizationsController {
   constructor(private readonly organizationsService: OrganizationsService) {}
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List organizations for the authenticated user' })
+  @ApiOkResponse({ type: MyOrganizationsResponseDto })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid access token' })
+  @UseGuards(JwtAuthGuard)
+  @Get('mine')
+  getMyOrganizations(@Req() request: AuthenticatedRequest) {
+    if (!request.authUser) {
+      throw new InternalServerErrorException('Authenticated user missing');
+    }
+
+    return this.organizationsService.getMyOrganizations(request.authUser.userId);
+  }
 
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new organization and initialize onboarding' })

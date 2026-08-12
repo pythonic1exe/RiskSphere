@@ -34,9 +34,8 @@ export function FinalCtaSection() {
           Bring risks, controls, evidence and audits into one connected system.
         </p>
         <div className="mt-9 flex flex-wrap items-center justify-center gap-5">
-          <Link href="/signin" className="text-sm font-medium text-text-secondary transition-colors hover:text-text-primary focus-visible:rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-4 focus-visible:ring-offset-bg-base">
-            Sign in
-          </Link>
+          <Link href="/login" className="text-sm font-medium text-text-secondary transition-colors hover:text-text-primary focus-visible:rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-4 focus-visible:ring-offset-bg-base">Sign in</Link>
+          <Link href="/onboarding" className="text-sm font-medium text-primary transition-colors hover:text-primary-hover focus-visible:rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-4 focus-visible:ring-offset-bg-base">Create an organization account</Link>
         </div>
       </motion.div>
     </section>

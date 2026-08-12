@@ -11,6 +11,7 @@
     "dev:web": "pnpm --filter @risksphere/web dev",
     "dev:api": "pnpm --filter @risksphere/api start:dev",
     "build": "pnpm -r build",
+    "prisma:studio": "pnpm --filter @risksphere/api prisma:studio",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck",
     "format": "prettier --check ."

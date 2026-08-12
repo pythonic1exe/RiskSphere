@@ -22,6 +22,7 @@
     "lint": "eslint \"src/**/*.ts\"",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "prisma:generate": "prisma generate",
+    "prisma:studio": "prisma studio",
     "postinstall": "prisma generate"
   },
   "devDependencies": {
