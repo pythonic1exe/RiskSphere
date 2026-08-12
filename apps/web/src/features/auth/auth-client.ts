@@ -155,6 +155,13 @@ export async function getMyOrganizations() {
   return response.organizations
 }
 
+export async function acceptInvitation(token: string) {
+  return apiRequest<{ invitation: { id: string } }>("/organization-invitations/accept", {
+    method: "POST",
+    body: JSON.stringify({ token }),
+  })
+}
+
 export function getAuthenticatedDestination(organizations: OrganizationSummary[]) {
   return organizations.some((organization) => organization.status === "ACTIVE" && organization.onboarding?.status === "COMPLETED")
     ? "/workspace"

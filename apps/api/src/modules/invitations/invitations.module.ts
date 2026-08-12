@@ -2,12 +2,13 @@ import { Module } from '@nestjs/common';
 
 import { AuthorizationModule } from '../../common/authorization/authorization.module';
 import { AuthModule } from '../auth/auth.module';
+import { EmailModule } from '../email';
 import { PrismaModule } from '../../database/prisma.module';
 import { InvitationsController } from './invitations.controller';
 import { InvitationsService } from './invitations.service';
 
 @Module({
-  imports: [PrismaModule, AuthorizationModule, AuthModule],
+  imports: [PrismaModule, AuthorizationModule, AuthModule, EmailModule],
   controllers: [InvitationsController],
   providers: [InvitationsService],
   exports: [InvitationsService],

@@ -1,8 +1,10 @@
 import {
   BadRequestException,
   ConflictException,
+  Inject,
   ForbiddenException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
@@ -12,6 +14,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { ORGANIZATION_ROLE_CODES } from '../../common/auth/auth.constants';
 import type { OrganizationAccess } from '../../common/auth/auth.types';
 import { OrganizationAuthorizationService } from '../../common/authorization';
+import { EmailService } from '../email';
 import type { AcceptInvitationDto } from './dto/accept-invitation.dto';
 import type { CreateInvitationDto } from './dto/create-invitation.dto';
 
@@ -28,8 +31,10 @@ const INVITATION_TTL_DAYS = 7;
 @Injectable()
 export class InvitationsService {
   constructor(
-    private readonly prisma: PrismaService,
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(OrganizationAuthorizationService)
     private readonly authorizationService: OrganizationAuthorizationService,
+    @Inject(EmailService) private readonly emailService: EmailService,
   ) {}
 
   async createInvitation(access: OrganizationAccess, dto: CreateInvitationDto) {
@@ -85,6 +90,25 @@ export class InvitationsService {
         expiresAt: new Date(Date.now() + INVITATION_TTL_DAYS * 24 * 60 * 60 * 1000),
       },
     });
+
+    try {
+      await this.emailService.sendOrganizationInvitation({
+        to: normalizedEmail,
+        organizationName: access.organization.name,
+        organizationSlug: access.organization.slug,
+        roleName: role.name,
+        inviteToken: rawToken,
+        expiresAt: invitation.expiresAt,
+      });
+    } catch {
+      await this.prisma.invitation
+        .delete({
+          where: { id: invitation.id },
+        })
+        .catch(() => undefined);
+
+      throw new InternalServerErrorException('Unable to send invitation email');
+    }
 
     return {
       invitation,

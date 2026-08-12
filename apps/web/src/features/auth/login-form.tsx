@@ -16,7 +16,15 @@ import { useAuth } from "./auth-provider"
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-export function LoginForm() {
+function sanitizeNextPath(nextPath?: string) {
+  if (!nextPath || !nextPath.startsWith("/") || nextPath.startsWith("//")) {
+    return undefined
+  }
+
+  return nextPath
+}
+
+export function LoginForm({ nextPath }: { nextPath?: string } = {}) {
   const reducedMotion = useReducedMotion()
   const router = useRouter()
   const { login, isSubmitting, error, clearError } = useAuth()
@@ -43,7 +51,7 @@ export function LoginForm() {
     if (!formIsValid) return
     try {
       await login(email, password)
-      router.replace(getAuthenticatedDestination(await getMyOrganizations()))
+      router.replace(sanitizeNextPath(nextPath) ?? getAuthenticatedDestination(await getMyOrganizations()))
     } catch {
       // AuthProvider exposes the server error inline below the form.
     }

@@ -21,6 +21,6 @@ export function AuthPageShell({ children }: { children: React.ReactNode }) {
   )
 }
 
-export function LoginPageShell() {
-  return <AuthPageShell><LoginForm /></AuthPageShell>
+export function LoginPageShell({ nextPath }: { nextPath?: string } = {}) {
+  return <AuthPageShell><LoginForm {...(nextPath ? { nextPath } : {})} /></AuthPageShell>
 }
