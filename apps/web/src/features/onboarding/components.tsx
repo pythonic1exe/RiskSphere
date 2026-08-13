@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import { RiskSphereBrand } from '@/components/brand/risksphere-brand';
 
 import { goalLabel, goals, roleLabel, roleOptions } from './data';
 import { onboardingSteps, stepIndex } from './config';
@@ -15,7 +16,7 @@ import { useOnboarding } from './state';
 import type { InvitationRole, OnboardingStepId } from './types';
 
 export function OnboardingHeader() {
-  return <header className="border-b border-border-subtle px-6 py-5 sm:px-8 lg:px-12"><div className="mx-auto flex w-full max-w-[92rem] items-center justify-between"><div className="font-brand text-sm tracking-[0.22em] text-text-primary">RISK<span className="text-primary">SPHERE</span></div><span className="hidden text-xs text-text-disabled sm:block">Organization setup</span></div></header>;
+  return <header className="border-b border-border-subtle px-6 py-5 sm:px-8 lg:px-12"><div className="mx-auto flex w-full max-w-[92rem] items-center justify-between"><RiskSphereBrand /><span className="hidden text-xs text-text-disabled sm:block">Organization setup</span></div></header>;
 }
 
 const accountStepper = { id: 'account', stepperLabel: 'Account', stepperDescription: 'Create the organization owner account.' };

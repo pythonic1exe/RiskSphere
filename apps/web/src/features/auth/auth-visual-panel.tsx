@@ -4,6 +4,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
+import { RiskSphereBrand } from "@/components/brand/risksphere-brand"
 
 export function AuthVisualPanel() {
   const reducedMotion = useReducedMotion()
@@ -28,9 +29,7 @@ export function AuthVisualPanel() {
 
       <div className="relative flex min-h-[100dvh] flex-col justify-between p-7 sm:p-8 lg:p-9">
         <div className="flex items-start justify-between gap-4">
-          <div className="font-brand text-sm font-semibold tracking-[0.22em] text-foreground">
-            RISK<span className="text-primary">SPHERE</span>
-          </div>
+          <RiskSphereBrand nameClassName="text-white" />
           <Link
             href="/"
             className="group inline-flex items-center gap-2 rounded-lg border border-white/15 bg-bg-base/35 px-3 py-2 text-xs font-medium text-white/80 transition-colors duration-200 hover:bg-bg-base/60 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70"

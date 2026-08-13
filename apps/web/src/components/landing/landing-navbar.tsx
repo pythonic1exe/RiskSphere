@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Bars3Icon, ChevronDownIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
+import { Bars3Icon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -17,6 +17,7 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
+import { RiskSphereBrand } from '@/components/brand/risksphere-brand';
 
 const links = [
   { label: 'Lifecycle', href: '#platform' },
@@ -119,17 +120,7 @@ export function LandingNavbar() {
         }}
       >
         <div className="flex items-center justify-between gap-4">
-          <Link href="/" className="flex items-center gap-3">
-            <span className="flex size-9 items-center justify-center rounded-xl bg-primary/15 text-primary">
-              <ShieldCheckIcon className="size-5" />
-            </span>
-            <span>
-              <span className="font-brand block text-sm uppercase tracking-[0.28em] text-text-primary">
-                RiskSphere
-              </span>
-              <span className="block text-xs text-text-muted">GRC &amp; Audit Management</span>
-            </span>
-          </Link>
+          <Link href="/" aria-label="RiskSphere home"><RiskSphereBrand logoClassName="size-8" /></Link>
 
           <nav
             className="hidden items-center rounded-full border border-white/8 bg-[rgba(17,24,39,0.62)] p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] backdrop-blur-xl lg:flex"

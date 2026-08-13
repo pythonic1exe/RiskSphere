@@ -2,6 +2,7 @@ import type React from "react"
 
 import { AuthVisualPanel } from "./auth-visual-panel"
 import { LoginForm } from "./login-form"
+import { RiskSphereBrand } from "@/components/brand/risksphere-brand"
 
 export function AuthPageShell({ children }: { children: React.ReactNode }) {
   return (
@@ -10,9 +11,7 @@ export function AuthPageShell({ children }: { children: React.ReactNode }) {
         <AuthVisualPanel />
       </section>
       <section className="flex min-h-[100dvh] flex-col bg-bg-base px-6 py-8 sm:px-10 sm:py-10 lg:px-12 xl:px-16">
-        <div className="font-brand text-sm font-semibold tracking-[0.22em] text-foreground lg:hidden">
-          RISK<span className="text-primary">SPHERE</span>
-        </div>
+        <RiskSphereBrand className="lg:hidden" />
         <div className="flex flex-1 items-center justify-center py-14 sm:py-16 lg:py-10">
           {children}
         </div>

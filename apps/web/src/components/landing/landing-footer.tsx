@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { InteractiveHoverButton } from '@/components/ui/interactive-hover-button';
+import { RiskSphereBrand } from '@/components/brand/risksphere-brand';
 
 const platformLinks = [
   { label: 'Platform', href: '#platform' },
@@ -13,9 +14,7 @@ export function LandingFooter() {
       <div className="mx-auto max-w-[92rem]">
         <div className="grid gap-12 md:grid-cols-[minmax(0,1fr)_auto_auto] md:gap-20">
           <div className="max-w-sm">
-            <Link href="/" className="font-brand text-sm uppercase tracking-[0.28em] text-text-primary">
-              RiskSphere
-            </Link>
+            <Link href="/" aria-label="RiskSphere home"><RiskSphereBrand /></Link>
             <p className="mt-5 text-sm leading-6 text-text-secondary">
               Governance, risk, compliance and audit management in one connected workspace.
             </p>
