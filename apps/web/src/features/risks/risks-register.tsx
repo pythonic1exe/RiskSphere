@@ -6,6 +6,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { ChevronLeft, ChevronRight, Plus, Search, SlidersHorizontal } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { MorphNativeSelect } from "@/components/ui/morph-select"
 import { getMyOrganizations } from "@/features/auth/auth-client"
 import { DashboardShell } from "@/features/dashboard/dashboard-shell"
 import { getRisks, type Risk, type RiskListParams, type RiskStatus } from "./risk-api"
@@ -27,7 +28,7 @@ function SummaryStrip({ risks }: { risks: Risk[] }) {
 }
 function SummaryItem({ label, value, muted }: { label: string; value: number | string; muted?: boolean }) { return <div className="px-5 py-4 sm:px-6"><p className="text-xs text-text-muted">{label}</p><p className={`mt-2 font-heading text-2xl tracking-[-0.04em] ${muted ? "text-text-secondary" : "text-text-primary"}`}>{value}</p></div> }
 
-function FilterSelect({ value, onChange, children, label }: { value: string; onChange: (value: string) => void; children: ReactNode; label: string }) { return <label className="relative"><span className="sr-only">{label}</span><select aria-label={label} value={value} onChange={(event) => onChange(event.target.value)} className="h-9 min-w-[112px] appearance-none rounded-lg border border-input bg-bg-card px-3 pr-8 text-sm text-text-secondary outline-none transition-colors hover:border-border-strong focus:border-border-strong"><option value="ALL">{label}</option>{children}</select><ChevronRight className="pointer-events-none absolute right-2 top-3 size-3 rotate-90 text-text-muted" /></label> }
+function FilterSelect({ value, onChange, children, label }: { value: string; onChange: (value: string) => void; children: ReactNode; label: string }) { return <MorphNativeSelect aria-label={label} value={value} onChange={onChange} className="min-w-[112px]"><option value="ALL">{label}</option>{children}</MorphNativeSelect> }
 
 export function RisksRegister() {
   const router = useRouter(); const searchParams = useSearchParams(); const queryClient = useQueryClient(); const organizationQuery = useActiveOrganization(); const organization = organizationQuery.data

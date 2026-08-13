@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useRef, useState, type MouseEvent } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { motion, useReducedMotion } from "motion/react"
 import { LogOut } from "lucide-react"
 
@@ -15,12 +15,25 @@ const expandedItemWidth = expandedWidth - 48
 
 export function DashboardSidebar({ onLogout, onExpandedChange }: { onLogout: () => Promise<void>; onExpandedChange?: (expanded: boolean) => void }) {
   const pathname = usePathname()
+  const router = useRouter()
   const reducedMotion = useReducedMotion()
   const [expanded, setExpanded] = useState(false)
+  const navigationTimer = useRef<number | null>(null)
+
+  useEffect(() => () => {
+    if (navigationTimer.current !== null) window.clearTimeout(navigationTimer.current)
+  }, [])
 
   function setSidebarExpanded(nextExpanded: boolean) {
     setExpanded(nextExpanded)
     onExpandedChange?.(nextExpanded)
+  }
+
+  function handleNavigation(event: MouseEvent<HTMLElement>, href: string) {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || href === pathname) return
+    event.preventDefault()
+    setSidebarExpanded(false)
+    navigationTimer.current = window.setTimeout(() => router.push(href), reducedMotion ? 0 : 220)
   }
 
   return (
@@ -50,8 +63,8 @@ export function DashboardSidebar({ onLogout, onExpandedChange }: { onLogout: () 
                 const active = pathname === item.href
                 const Icon = item.icon
                 return (
-                  <motion.div key={item.href} className="overflow-hidden" animate={{ width: expanded ? expandedItemWidth : collapsedItemWidth }} transition={{ duration: reducedMotion ? 0 : 0.21, ease: [0.22, 1, 0.36, 1] }}>
-                    <Link href={item.href} aria-label={item.label} aria-current={active ? "page" : undefined} className={`flex h-10 w-full items-center gap-3 overflow-hidden rounded-xl px-0 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70 ${active ? "bg-primary-muted text-text-primary" : "text-text-muted hover:bg-bg-hover/70 hover:text-text-primary"}`}>
+                  <motion.div key={item.href} className="overflow-hidden" animate={{ width: expanded ? expandedItemWidth : collapsedItemWidth }} {...(reducedMotion ? {} : { whileHover: { x: 3 }, whileTap: { scale: 0.985 } })} transition={{ duration: reducedMotion ? 0 : 0.21, ease: [0.22, 1, 0.36, 1] }}>
+                    <Link href={item.href} onClick={(event) => handleNavigation(event, item.href)} aria-label={item.label} aria-current={active ? "page" : undefined} className={`flex h-10 w-full items-center gap-3 overflow-hidden rounded-xl px-0 transition-[background-color,color,box-shadow] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70 ${active ? "bg-primary-muted text-text-primary shadow-[0_0_18px_rgba(96,165,250,0.08)]" : "text-text-muted hover:bg-bg-hover/70 hover:text-text-primary"}`}>
                       <span className="flex size-10 shrink-0 items-center justify-center"><Icon className="size-[18px]" strokeWidth={1.8} /></span>
                       <motion.span aria-hidden={!expanded} animate={{ width: expanded ? 110 : 0, opacity: expanded ? 1 : 0, x: expanded ? 0 : -8 }} transition={{ duration: reducedMotion ? 0 : 0.16, delay: expanded ? 0.06 : 0 }} className="block shrink-0 overflow-hidden whitespace-nowrap text-xs font-medium">{item.label}</motion.span>
                     </Link>

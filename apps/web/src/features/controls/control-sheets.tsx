@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { MorphSelect, MorphSelectContent, MorphSelectItem as SelectItem, MorphSelectTrigger, MorphSelectValue } from "@/components/ui/morph-select"
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Textarea } from "@/components/ui/textarea"
 import { createControl, createControlExecution, updateControl, type Control, type ControlAutomationType, type ControlFrequency, type ControlType } from "./control-api"
@@ -16,7 +16,7 @@ import { automationLabel, frequencyLabel, typeLabel } from "./control-format"
 function Field({ label, children }: { label: string; children: React.ReactNode }) { return <div className="space-y-2"><Label className="text-text-secondary">{label}</Label>{children}</div> }
 function FormError({ error }: { error: string | null }) { return error ? <p className="text-sm text-danger">{error}</p> : null }
 function ErrorMessage(error: unknown) { return error instanceof Error ? error.message : "Something went wrong. Please try again." }
-function SelectField({ label, value, onValueChange, children }: { label: string; value: string; onValueChange: (value: string) => void; children: React.ReactNode }) { return <Field label={label}><Select value={value} onValueChange={(value) => value && onValueChange(value)}><SelectTrigger className="w-full"><SelectValue /></SelectTrigger><SelectContent>{children}</SelectContent></Select></Field> }
+function SelectField({ label, value, onValueChange, children }: { label: string; value: string; onValueChange: (value: string) => void; children: React.ReactNode }) { return <Field label={label}><MorphSelect value={value} onValueChange={(next) => next && onValueChange(next)}><MorphSelectTrigger className="w-full"><MorphSelectValue /></MorphSelectTrigger><MorphSelectContent>{children}</MorphSelectContent></MorphSelect></Field> }
 
 const controlTypes: ControlType[] = ["PREVENTIVE", "DETECTIVE", "CORRECTIVE"]
 const automationTypes: ControlAutomationType[] = ["MANUAL", "AUTOMATED", "HYBRID"]

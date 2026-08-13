@@ -6,6 +6,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { ChevronLeft, ChevronRight, Plus, Search, SlidersHorizontal } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { MorphNativeSelect } from "@/components/ui/morph-select"
 import { getMyOrganizations } from "@/features/auth/auth-client"
 import { DashboardShell } from "@/features/dashboard/dashboard-shell"
 import { getControls, type Control, type ControlAutomationType, type ControlFrequency, type ControlListParams, type ControlStatus, type ControlType } from "./control-api"
@@ -15,7 +16,7 @@ import { ControlsRegisterSkeleton } from "./control-loading"
 import { ControlStatusText, ExecutionStatusText, RowChevron, TypeIndicator } from "./control-ui"
 
 function useActiveOrganization() { return useQuery({ queryKey: ["organizations", "mine"], queryFn: getMyOrganizations, staleTime: 60_000, select: (organizations) => organizations.find((item) => item.status === "ACTIVE" && item.onboarding?.status === "COMPLETED") ?? null }) }
-function FilterSelect({ value, onChange, children, label }: { value: string; onChange: (value: string) => void; children: ReactNode; label: string }) { return <label className="relative"><span className="sr-only">{label}</span><select aria-label={label} value={value} onChange={(event) => onChange(event.target.value)} className="h-9 min-w-[112px] appearance-none rounded-lg border border-input bg-bg-card px-3 pr-8 text-sm text-text-secondary outline-none transition-colors hover:border-border-strong focus:border-border-strong"><option value="ALL">{label}</option>{children}</select><ChevronRight className="pointer-events-none absolute right-2 top-3 size-3 rotate-90 text-text-muted" /></label> }
+function FilterSelect({ value, onChange, children, label }: { value: string; onChange: (value: string) => void; children: ReactNode; label: string }) { return <MorphNativeSelect aria-label={label} value={value} onChange={onChange} className="min-w-[112px]"><option value="ALL">{label}</option>{children}</MorphNativeSelect> }
 function SummaryStrip({ controls }: { controls: Control[] }) { const active = controls.filter((item) => item.status === "ACTIVE").length; const dueSoon = controls.filter((item) => item.nextExecution && !item.nextExecution.isOverdue && new Date(item.nextExecution.dueAt).getTime() <= Date.now() + 14 * 86400000).length; const overdue = controls.filter((item) => item.nextExecution?.isOverdue).length; const draft = controls.filter((item) => item.status === "DRAFT").length; return <div className="grid grid-cols-2 divide-x divide-y divide-border-subtle/70 rounded-2xl border border-border-subtle/70 bg-bg-card/55 sm:grid-cols-4 sm:divide-y-0"><SummaryItem label="Active controls" value={active} /><SummaryItem label="Due soon" value={dueSoon} />{overdue ? <SummaryItem label="Overdue" value={overdue} tone="warning" /> : <SummaryItem label="Overdue" value={overdue} />}<SummaryItem label="Draft" value={draft} /></div> }
 function SummaryItem({ label, value, tone }: { label: string; value: number; tone?: "warning" }) { return <div className="px-5 py-4 sm:px-6"><p className="text-xs text-text-muted">{label}</p><p className={`mt-2 font-heading text-2xl tracking-[-0.04em] ${tone === "warning" ? "text-warning" : "text-text-primary"}`}>{value}</p></div> }
 

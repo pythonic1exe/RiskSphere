@@ -141,6 +141,20 @@ enum OrganizationRequirementStatus {
   NOT_APPLICABLE
 }
 
+enum EvidenceType {
+  FILE
+  URL
+  TEXT
+  SYSTEM_RECORD
+}
+
+enum EvidenceStatus {
+  DRAFT
+  ACTIVE
+  EXPIRED
+  ARCHIVED
+}
+
 model User {
   id                  String       @id @default(uuid()) @db.Uuid
   email               String       @unique
@@ -195,6 +209,10 @@ model Organization {
   controls                 Control[]
   controlExecutions        ControlExecution[]
   riskControls             RiskControl[]
+  evidence                 Evidence[]
+  evidenceVersions         EvidenceVersion[]
+  controlEvidence          ControlEvidence[]
+  executionEvidence        ExecutionEvidence[]
 
   @@index([status, updatedAt])
 }
@@ -231,6 +249,11 @@ model Membership {
   completedControlExecutions    ControlExecution[]               @relation("ExecutionCompletedBy")
   createdControlExecutions      ControlExecution[]               @relation("ExecutionCreatedBy")
   createdRiskControls           RiskControl[]
+  ownedEvidence                 Evidence[]                       @relation("EvidenceOwner")
+  createdEvidence               Evidence[]                       @relation("EvidenceCreatedBy")
+  uploadedEvidenceVersions      EvidenceVersion[]                @relation("EvidenceVersionUploadedBy")
+  linkedControlEvidence         ControlEvidence[]                @relation("ControlEvidenceLinkedBy")
+  linkedExecutionEvidence       ExecutionEvidence[]              @relation("ExecutionEvidenceLinkedBy")
 
   @@unique([organizationId, userId])
   @@unique([organizationId, id])
@@ -510,6 +533,7 @@ model Control {
   executions            ControlExecution[]
   riskControls          RiskControl[]
   requirementControls   RequirementControl[]
+  evidenceLinks         ControlEvidence[]
 
   @@unique([organizationId, code])
   @@unique([organizationId, id])
@@ -540,10 +564,100 @@ model ControlExecution {
   assignedToMembership    Membership?            @relation("ExecutionAssignee", fields: [organizationId, assignedToMembershipId], references: [organizationId, id], onDelete: Restrict)
   completedByMembership   Membership?            @relation("ExecutionCompletedBy", fields: [organizationId, completedByMembershipId], references: [organizationId, id], onDelete: Restrict)
   createdByMembership     Membership             @relation("ExecutionCreatedBy", fields: [organizationId, createdByMembershipId], references: [organizationId, id], onDelete: Restrict)
+  evidenceLinks           ExecutionEvidence[]
 
   @@unique([organizationId, id])
   @@index([organizationId, controlId, dueAt])
   @@index([organizationId, status, dueAt])
+}
+
+model Evidence {
+  id                    String              @id @default(uuid()) @db.Uuid
+  organizationId        String              @db.Uuid
+  title                 String
+  description           String?
+  type                  EvidenceType
+  status                EvidenceStatus      @default(DRAFT)
+  ownerMembershipId     String?             @db.Uuid
+  createdByMembershipId String              @db.Uuid
+  effectiveFrom         DateTime?
+  effectiveTo           DateTime?
+  expiresAt             DateTime?
+  archivedAt            DateTime?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  organization          Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  ownerMembership       Membership?         @relation("EvidenceOwner", fields: [organizationId, ownerMembershipId], references: [organizationId, id], onDelete: Restrict)
+  createdByMembership   Membership          @relation("EvidenceCreatedBy", fields: [organizationId, createdByMembershipId], references: [organizationId, id], onDelete: Restrict)
+  versions              EvidenceVersion[]
+  controlLinks          ControlEvidence[]
+  executionLinks        ExecutionEvidence[]
+
+  @@unique([organizationId, id])
+  @@index([organizationId, status, updatedAt])
+  @@index([organizationId, type, updatedAt])
+  @@index([organizationId, ownerMembershipId])
+  @@index([organizationId, createdByMembershipId])
+  @@index([organizationId, expiresAt])
+}
+
+model EvidenceVersion {
+  id                     String       @id @default(uuid()) @db.Uuid
+  organizationId         String       @db.Uuid
+  evidenceId             String       @db.Uuid
+  versionNumber          Int
+  fileName               String?
+  storageKey             String?
+  mimeType               String?
+  fileSize               Int?
+  checksum               String?
+  externalUrl            String?
+  textContent            String?
+  uploadedByMembershipId String       @db.Uuid
+  createdAt              DateTime     @default(now())
+  organization           Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  evidence               Evidence     @relation(fields: [organizationId, evidenceId], references: [organizationId, id], onDelete: Cascade)
+  uploadedByMembership   Membership   @relation("EvidenceVersionUploadedBy", fields: [organizationId, uploadedByMembershipId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, evidenceId, versionNumber])
+  @@unique([organizationId, id])
+  @@index([organizationId, evidenceId, createdAt])
+}
+
+model ControlEvidence {
+  id                   String       @id @default(uuid()) @db.Uuid
+  organizationId       String       @db.Uuid
+  evidenceId           String       @db.Uuid
+  controlId            String       @db.Uuid
+  linkedByMembershipId String       @db.Uuid
+  linkedAt             DateTime     @default(now())
+  organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  evidence             Evidence     @relation(fields: [organizationId, evidenceId], references: [organizationId, id], onDelete: Cascade)
+  control              Control      @relation(fields: [organizationId, controlId], references: [organizationId, id], onDelete: Cascade)
+  linkedByMembership   Membership   @relation("ControlEvidenceLinkedBy", fields: [organizationId, linkedByMembershipId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, evidenceId, controlId])
+  @@unique([organizationId, id])
+  @@index([organizationId, evidenceId])
+  @@index([organizationId, controlId])
+}
+
+model ExecutionEvidence {
+  id                   String           @id @default(uuid()) @db.Uuid
+  organizationId       String           @db.Uuid
+  evidenceId           String           @db.Uuid
+  controlExecutionId   String           @db.Uuid
+  linkedByMembershipId String           @db.Uuid
+  linkedAt             DateTime         @default(now())
+  organization         Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  evidence             Evidence         @relation(fields: [organizationId, evidenceId], references: [organizationId, id], onDelete: Cascade)
+  controlExecution     ControlExecution @relation(fields: [organizationId, controlExecutionId], references: [organizationId, id], onDelete: Cascade)
+  linkedByMembership   Membership       @relation("ExecutionEvidenceLinkedBy", fields: [organizationId, linkedByMembershipId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, evidenceId, controlExecutionId])
+  @@unique([organizationId, id])
+  @@index([organizationId, evidenceId])
+  @@index([organizationId, controlExecutionId])
 }
 
 model RiskControl {

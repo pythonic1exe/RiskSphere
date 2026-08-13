@@ -6,13 +6,14 @@ import { CalendarDays, Check, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { MorphNativeSelect } from "@/components/ui/morph-select"
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import type { AssessmentType, Risk, TreatmentStatus, TreatmentStrategy } from "./risk-api"
 import { createAssessment, createRisk, updateRisk, updateTreatment } from "./risk-api"
 import { severityForScore, strategyLabel, treatmentStatusLabel } from "./risk-format"
 
 function Field({ label, children }: { label: string; children: ReactNode }) { return <label className="block space-y-2"><span className="text-xs font-medium text-text-secondary">{label}</span>{children}</label> }
-function SelectField({ label, value, onChange, children }: { label: string; value: string; onChange: (value: string) => void; children: ReactNode }) { return <Field label={label}><select value={value} onChange={(event) => onChange(event.target.value)} className="h-9 w-full rounded-lg border border-input bg-bg-card px-3 text-sm text-text-primary outline-none focus:border-border-strong focus:ring-2 focus:ring-primary/20">{children}</select></Field> }
+function SelectField({ label, value, onChange, children }: { label: string; value: string; onChange: (value: string) => void; children: ReactNode }) { return <Field label={label}><MorphNativeSelect value={value} onChange={onChange} className="w-full">{children}</MorphNativeSelect></Field> }
 function FormError({ error }: { error: unknown }) { return error ? <p className="text-sm text-danger">{error instanceof Error ? error.message : "Unable to save changes"}</p> : null }
 
 export function CreateRiskSheet({ organizationId, ownerMembershipId, open, onOpenChange, onCreated }: { organizationId: string; ownerMembershipId: string; open: boolean; onOpenChange: (open: boolean) => void; onCreated: (risk: Risk) => void }) {
