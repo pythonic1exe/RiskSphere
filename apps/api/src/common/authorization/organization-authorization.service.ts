@@ -1,7 +1,10 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 
+// Nest uses the runtime constructor token for dependency injection.
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports
 import { PrismaService } from '../../database/prisma.service';
 import {
+  COMPLIANCE_MANAGE_ROLE_CODES,
   MANAGE_ORGANIZATION_ROLE_CODES,
   ORGANIZATION_ROLE_CODES,
   type OrganizationRoleCode,
@@ -102,6 +105,12 @@ export class OrganizationAuthorizationService {
 
   canManageFrameworkSelections(roleCodes: OrganizationRoleCode[]): boolean {
     return this.canManageOrganization(roleCodes);
+  }
+
+  canManageCompliance(roleCodes: OrganizationRoleCode[]): boolean {
+    return roleCodes.some((roleCode) =>
+      COMPLIANCE_MANAGE_ROLE_CODES.includes(roleCode),
+    );
   }
 
   canAssignRole(actorRoleCodes: OrganizationRoleCode[], targetRoleCode: string): boolean {

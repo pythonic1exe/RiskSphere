@@ -1,0 +1,1 @@
+ALTER INDEX "RequirementAssessment_organizationId_organizationRequirementId_" RENAME TO "ReqAssessment_org_req_assessed_idx";

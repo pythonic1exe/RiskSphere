@@ -11,6 +11,7 @@ import { InvitationsModule } from './modules/invitations/invitations.module';
 import { FrameworksModule } from './modules/frameworks/frameworks.module';
 import { RisksModule } from './modules/risks/risks.module';
 import { ControlsModule } from './modules/controls/controls.module';
+import { ComplianceModule } from './modules/compliance/compliance.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { ControlsModule } from './modules/controls/controls.module';
     FrameworksModule,
     RisksModule,
     ControlsModule,
+    ComplianceModule,
   ],
 })
 export class AppModule {}

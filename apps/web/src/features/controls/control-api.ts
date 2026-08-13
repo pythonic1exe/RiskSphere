@@ -8,6 +8,7 @@ export type ExecutionStatus = "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "CANCE
 
 export type MemberSummary = { id: string; name: string }
 export type LinkedRisk = { id: string; code: string; title: string; status: string; category?: string | null }
+export type LinkedRequirement = { id: string; code: string; title: string; status: string; framework: { code: string; name: string; version: string } }
 export type ControlExecution = {
   id: string
   controlId: string
@@ -83,3 +84,4 @@ export function getControlRisks(organizationId: string, controlId: string) { ret
 export function linkRisk(organizationId: string, controlId: string, riskId: string) { return apiRequest(`/organizations/${organizationId}/controls/${controlId}/risks/${riskId}`, { method: "POST" }) }
 export function unlinkRisk(organizationId: string, controlId: string, riskId: string) { return apiRequest(`/organizations/${organizationId}/controls/${controlId}/risks/${riskId}`, { method: "DELETE" }) }
 export function getRiskControls(organizationId: string, riskId: string) { return apiRequest<{ data: Control[] }>(`/organizations/${organizationId}/risks/${riskId}/controls`) }
+export function getControlRequirements(organizationId: string, controlId: string) { return apiRequest<{ data: LinkedRequirement[] }>(`/organizations/${organizationId}/compliance/controls/${controlId}/requirements`) }
