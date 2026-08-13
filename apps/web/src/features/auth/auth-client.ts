@@ -107,7 +107,7 @@ async function refreshTokens(): Promise<AuthTokens | null> {
 export async function apiRequest<T>(path: string, options: ApiOptions = {}): Promise<T> {
   const session = readSession()
   const headers = new globalThis.Headers(options.headers)
-  if (options.body && !headers.has("Content-Type")) headers.set("Content-Type", "application/json")
+  if (options.body && !headers.has("Content-Type") && !(options.body instanceof globalThis.FormData)) headers.set("Content-Type", "application/json")
   if (session?.tokens.accessToken) headers.set("Authorization", `Bearer ${session.tokens.accessToken}`)
 
   const response = await globalThis.fetch(`${apiBaseUrl}${path}`, { ...options, headers })
