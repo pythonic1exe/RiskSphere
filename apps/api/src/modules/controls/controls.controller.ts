@@ -6,8 +6,9 @@ import { OrganizationRoleGuard } from '../../common/authorization';
 // Nest uses the runtime constructor token for dependency injection.
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
 import { ControlsService } from './controls.service';
-import { CompleteControlExecutionDto, CreateControlDto, CreateControlExecutionDto, UpdateControlDto, UpdateControlExecutionDto } from './dto';
-import type { ListControlsDto } from './dto';
+// ListControlsDto must remain a runtime import so Nest's ValidationPipe receives its metadata.
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports
+import { CompleteControlExecutionDto, CreateControlDto, CreateControlExecutionDto, ListControlsDto, UpdateControlDto, UpdateControlExecutionDto } from './dto';
 
 @ApiTags('Controls')
 @ApiBearerAuth()

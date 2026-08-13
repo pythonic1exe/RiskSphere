@@ -6,6 +6,16 @@ export type Severity = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL"
 export type TreatmentStrategy = "MITIGATE" | "ACCEPT" | "AVOID" | "TRANSFER"
 export type TreatmentStatus = "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED"
 
+export type LinkedControl = {
+  id: string
+  code: string
+  title: string
+  category: string | null
+  type: "PREVENTIVE" | "DETECTIVE" | "CORRECTIVE"
+  frequency: "CONTINUOUS" | "DAILY" | "WEEKLY" | "MONTHLY" | "QUARTERLY" | "SEMI_ANNUAL" | "ANNUAL" | "AD_HOC"
+  status: "DRAFT" | "ACTIVE" | "RETIRED" | "ARCHIVED"
+}
+
 export type RiskAssessment = {
   id: string
   organizationId: string
@@ -116,4 +126,16 @@ export function closeRisk(organizationId: string, riskId: string) {
 
 export function archiveRisk(organizationId: string, riskId: string) {
   return apiRequest<Risk>(`/organizations/${organizationId}/risks/${riskId}/archive`, { method: "POST" })
+}
+
+export function getRiskControls(organizationId: string, riskId: string) {
+  return apiRequest<{ data: LinkedControl[] }>(`/organizations/${organizationId}/risks/${riskId}/controls`)
+}
+
+export function linkControlToRisk(organizationId: string, controlId: string, riskId: string) {
+  return apiRequest(`/organizations/${organizationId}/controls/${controlId}/risks/${riskId}`, { method: "POST" })
+}
+
+export function unlinkControlFromRisk(organizationId: string, controlId: string, riskId: string) {
+  return apiRequest(`/organizations/${organizationId}/controls/${controlId}/risks/${riskId}`, { method: "DELETE" })
 }
