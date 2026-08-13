@@ -90,6 +90,43 @@ enum RiskTreatmentStatus {
   COMPLETED
 }
 
+enum ControlType {
+  PREVENTIVE
+  DETECTIVE
+  CORRECTIVE
+}
+
+enum ControlAutomationType {
+  MANUAL
+  AUTOMATED
+  HYBRID
+}
+
+enum ControlFrequency {
+  CONTINUOUS
+  DAILY
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  SEMI_ANNUAL
+  ANNUAL
+  AD_HOC
+}
+
+enum ControlStatus {
+  DRAFT
+  ACTIVE
+  RETIRED
+  ARCHIVED
+}
+
+enum ControlExecutionStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
 model User {
   id                    String     @id @default(uuid()) @db.Uuid
   email                 String     @unique
@@ -137,6 +174,9 @@ model Organization {
   risks                 Risk[]
   riskAssessments       RiskAssessment[]
   riskTreatments        RiskTreatment[]
+  controls              Control[]
+  controlExecutions     ControlExecution[]
+  riskControls          RiskControl[]
 
   @@index([status, updatedAt])
 }
@@ -161,6 +201,13 @@ model Membership {
   riskAssessments       RiskAssessment[]
   ownedRiskTreatments   RiskTreatment[] @relation("RiskTreatmentOwner")
   acceptedRiskTreatments RiskTreatment[] @relation("RiskTreatmentAcceptedBy")
+  ownedControls          Control[] @relation("ControlOwner")
+  createdControls        Control[] @relation("ControlCreatedBy")
+  updatedControls        Control[] @relation("ControlUpdatedBy")
+  assignedControlExecutions ControlExecution[] @relation("ExecutionAssignee")
+  completedControlExecutions ControlExecution[] @relation("ExecutionCompletedBy")
+  createdControlExecutions ControlExecution[] @relation("ExecutionCreatedBy")
+  createdRiskControls    RiskControl[]
 
   @@unique([organizationId, userId])
   @@unique([organizationId, id])
@@ -292,12 +339,90 @@ model Risk {
   updatedByMembership   Membership   @relation("RiskUpdatedBy", fields: [organizationId, updatedByMembershipId], references: [organizationId, id], onDelete: Restrict)
   assessments           RiskAssessment[]
   treatment             RiskTreatment?
+  riskControls          RiskControl[]
 
   @@unique([organizationId, code])
   @@unique([organizationId, id])
   @@index([organizationId, status, updatedAt])
   @@index([organizationId, ownerMembershipId])
   @@index([organizationId, category])
+}
+
+model Control {
+  id                    String               @id @default(uuid()) @db.Uuid
+  organizationId        String               @db.Uuid
+  code                  String
+  title                 String
+  description           String?
+  category              String?
+  type                  ControlType
+  automationType        ControlAutomationType
+  frequency             ControlFrequency
+  status                ControlStatus         @default(DRAFT)
+  ownerMembershipId     String?              @db.Uuid
+  createdByMembershipId String               @db.Uuid
+  updatedByMembershipId String               @db.Uuid
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+  archivedAt            DateTime?
+  organization          Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  ownerMembership       Membership?          @relation("ControlOwner", fields: [organizationId, ownerMembershipId], references: [organizationId, id], onDelete: Restrict)
+  createdByMembership   Membership           @relation("ControlCreatedBy", fields: [organizationId, createdByMembershipId], references: [organizationId, id], onDelete: Restrict)
+  updatedByMembership   Membership           @relation("ControlUpdatedBy", fields: [organizationId, updatedByMembershipId], references: [organizationId, id], onDelete: Restrict)
+  executions            ControlExecution[]
+  riskControls          RiskControl[]
+
+  @@unique([organizationId, code])
+  @@unique([organizationId, id])
+  @@index([organizationId, status, updatedAt])
+  @@index([organizationId, ownerMembershipId])
+  @@index([organizationId, category])
+}
+
+model ControlExecution {
+  id                       String                 @id @default(uuid()) @db.Uuid
+  organizationId           String                 @db.Uuid
+  controlId                String                 @db.Uuid
+  periodLabel              String
+  periodStart              DateTime
+  periodEnd                DateTime
+  dueAt                    DateTime
+  status                   ControlExecutionStatus @default(SCHEDULED)
+  assignedToMembershipId   String?                @db.Uuid
+  startedAt                DateTime?
+  completedAt              DateTime?
+  completedByMembershipId  String?                @db.Uuid
+  completionNotes          String?
+  createdByMembershipId    String                 @db.Uuid
+  createdAt                DateTime               @default(now())
+  updatedAt                DateTime               @updatedAt
+  organization             Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  control                  Control                @relation(fields: [organizationId, controlId], references: [organizationId, id], onDelete: Cascade)
+  assignedToMembership     Membership?            @relation("ExecutionAssignee", fields: [organizationId, assignedToMembershipId], references: [organizationId, id], onDelete: Restrict)
+  completedByMembership    Membership?            @relation("ExecutionCompletedBy", fields: [organizationId, completedByMembershipId], references: [organizationId, id], onDelete: Restrict)
+  createdByMembership      Membership             @relation("ExecutionCreatedBy", fields: [organizationId, createdByMembershipId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@index([organizationId, controlId, dueAt])
+  @@index([organizationId, status, dueAt])
+}
+
+model RiskControl {
+  id                    String       @id @default(uuid()) @db.Uuid
+  organizationId        String       @db.Uuid
+  riskId                String       @db.Uuid
+  controlId             String       @db.Uuid
+  createdByMembershipId String       @db.Uuid
+  createdAt             DateTime     @default(now())
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  risk                  Risk         @relation(fields: [organizationId, riskId], references: [organizationId, id], onDelete: Cascade)
+  control               Control      @relation(fields: [organizationId, controlId], references: [organizationId, id], onDelete: Cascade)
+  createdByMembership   Membership   @relation(fields: [organizationId, createdByMembershipId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, riskId, controlId])
+  @@unique([organizationId, id])
+  @@index([organizationId, riskId])
+  @@index([organizationId, controlId])
 }
 
 model RiskAssessment {
