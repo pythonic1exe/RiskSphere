@@ -13,6 +13,7 @@ import { RisksModule } from './modules/risks/risks.module';
 import { ControlsModule } from './modules/controls/controls.module';
 import { ComplianceModule } from './modules/compliance/compliance.module';
 import { EvidenceModule } from './modules/evidence/evidence.module';
+import { AuditsModule } from './modules/audits/audits.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { EvidenceModule } from './modules/evidence/evidence.module';
     ControlsModule,
     ComplianceModule,
     EvidenceModule,
+    AuditsModule,
   ],
 })
 export class AppModule {}

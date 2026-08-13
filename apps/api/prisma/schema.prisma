@@ -155,6 +155,51 @@ enum EvidenceStatus {
   ARCHIVED
 }
 
+enum AuditType {
+  INTERNAL
+  EXTERNAL
+  COMPLIANCE
+  OPERATIONAL
+  VENDOR
+}
+
+enum AuditStatus {
+  DRAFT
+  PLANNED
+  IN_PROGRESS
+  UNDER_REVIEW
+  COMPLETED
+  CANCELLED
+}
+
+enum AuditMemberRole {
+  LEAD_AUDITOR
+  AUDITOR
+  REVIEWER
+  OBSERVER
+}
+
+enum AuditScopeType {
+  FRAMEWORK
+  REQUIREMENT
+  CONTROL
+}
+
+enum AuditTestStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  READY_FOR_REVIEW
+  COMPLETED
+  BLOCKED
+}
+
+enum AuditTestResult {
+  PASS
+  FAIL
+  EXCEPTION
+  NOT_APPLICABLE
+}
+
 model User {
   id                  String       @id @default(uuid()) @db.Uuid
   email               String       @unique
@@ -213,6 +258,12 @@ model Organization {
   evidenceVersions         EvidenceVersion[]
   controlEvidence          ControlEvidence[]
   executionEvidence        ExecutionEvidence[]
+  audits                   Audit[]
+  auditMembers             AuditMember[]
+  auditScopes              AuditScope[]
+  auditTests               AuditTest[]
+  auditTestEvidence        AuditTestEvidence[]
+  auditTestObservations    AuditTestObservation[]
 
   @@index([status, updatedAt])
 }
@@ -254,6 +305,18 @@ model Membership {
   uploadedEvidenceVersions      EvidenceVersion[]                @relation("EvidenceVersionUploadedBy")
   linkedControlEvidence         ControlEvidence[]                @relation("ControlEvidenceLinkedBy")
   linkedExecutionEvidence       ExecutionEvidence[]              @relation("ExecutionEvidenceLinkedBy")
+  createdAudits                 Audit[]                          @relation("AuditCreatedBy")
+  updatedAudits                 Audit[]                          @relation("AuditUpdatedBy")
+  leadAudits                    Audit[]                          @relation("AuditLeadAuditor")
+  auditMemberships              AuditMember[]                    @relation("AuditMemberMembership")
+  addedAuditMembers             AuditMember[]                    @relation("AuditMemberAddedBy")
+  addedAuditScopes              AuditScope[]                     @relation("AuditScopeAddedBy")
+  createdAuditTests             AuditTest[]                      @relation("AuditTestCreatedBy")
+  updatedAuditTests             AuditTest[]                      @relation("AuditTestUpdatedBy")
+  assignedAuditTests            AuditTest[]                      @relation("AuditTestAssignee")
+  linkedAuditTestEvidence       AuditTestEvidence[]              @relation("AuditTestEvidenceLinkedBy")
+  createdAuditTestObservations  AuditTestObservation[]           @relation("AuditTestObservationCreatedBy")
+  updatedAuditTestObservations  AuditTestObservation[]           @relation("AuditTestObservationUpdatedBy")
 
   @@unique([organizationId, userId])
   @@unique([organizationId, id])
@@ -407,6 +470,7 @@ model OrganizationFramework {
   ownerMembership       Membership?                 @relation("ComplianceFrameworkOwner", fields: [organizationId, ownerMembershipId], references: [organizationId, id], onDelete: Restrict)
   adoptedByMembership   Membership                  @relation("ComplianceFrameworkAdoptedBy", fields: [organizationId, adoptedByMembershipId], references: [organizationId, id], onDelete: Restrict)
   requirements          OrganizationRequirement[]
+  auditScopes           AuditScope[]
 
   @@unique([organizationId, id], map: "OrganizationFramework_organizationId_id_key")
   @@unique([organizationId, frameworkCatalogId], map: "OrganizationFramework_organizationId_frameworkCatalogId_key")
@@ -434,6 +498,8 @@ model OrganizationRequirement {
   ownerMembership         Membership?                   @relation("ComplianceRequirementOwner", fields: [organizationId, ownerMembershipId], references: [organizationId, id], onDelete: Restrict)
   assessments             RequirementAssessment[]
   controlLinks            RequirementControl[]
+  auditScopes             AuditScope[]
+  auditTests              AuditTest[]
 
   @@unique([organizationId, id], map: "OrganizationRequirement_organizationId_id_key")
   @@unique([organizationId, organizationFrameworkId, frameworkRequirementId], map: "OrganizationRequirement_org_framework_req_key")
@@ -534,6 +600,8 @@ model Control {
   riskControls          RiskControl[]
   requirementControls   RequirementControl[]
   evidenceLinks         ControlEvidence[]
+  auditScopes           AuditScope[]
+  auditTests            AuditTest[]
 
   @@unique([organizationId, code])
   @@unique([organizationId, id])
@@ -592,6 +660,7 @@ model Evidence {
   versions              EvidenceVersion[]
   controlLinks          ControlEvidence[]
   executionLinks        ExecutionEvidence[]
+  auditTestEvidence     AuditTestEvidence[]
 
   @@unique([organizationId, id])
   @@index([organizationId, status, updatedAt])
@@ -602,9 +671,9 @@ model Evidence {
 }
 
 model EvidenceVersion {
-  id                     String       @id @default(uuid()) @db.Uuid
-  organizationId         String       @db.Uuid
-  evidenceId             String       @db.Uuid
+  id                     String              @id @default(uuid()) @db.Uuid
+  organizationId         String              @db.Uuid
+  evidenceId             String              @db.Uuid
   versionNumber          Int
   fileName               String?
   storageKey             String?
@@ -613,11 +682,12 @@ model EvidenceVersion {
   checksum               String?
   externalUrl            String?
   textContent            String?
-  uploadedByMembershipId String       @db.Uuid
-  createdAt              DateTime     @default(now())
-  organization           Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  evidence               Evidence     @relation(fields: [organizationId, evidenceId], references: [organizationId, id], onDelete: Cascade)
-  uploadedByMembership   Membership   @relation("EvidenceVersionUploadedBy", fields: [organizationId, uploadedByMembershipId], references: [organizationId, id], onDelete: Restrict)
+  uploadedByMembershipId String              @db.Uuid
+  createdAt              DateTime            @default(now())
+  organization           Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  evidence               Evidence            @relation(fields: [organizationId, evidenceId], references: [organizationId, id], onDelete: Cascade)
+  uploadedByMembership   Membership          @relation("EvidenceVersionUploadedBy", fields: [organizationId, uploadedByMembershipId], references: [organizationId, id], onDelete: Restrict)
+  auditTestEvidence      AuditTestEvidence[]
 
   @@unique([organizationId, evidenceId, versionNumber])
   @@unique([organizationId, id])
@@ -658,6 +728,165 @@ model ExecutionEvidence {
   @@unique([organizationId, id])
   @@index([organizationId, evidenceId])
   @@index([organizationId, controlExecutionId])
+}
+
+model Audit {
+  id                      String        @id @default(uuid()) @db.Uuid
+  organizationId          String        @db.Uuid
+  code                    String
+  title                   String
+  description             String?
+  type                    AuditType
+  status                  AuditStatus   @default(DRAFT)
+  leadAuditorMembershipId String?       @db.Uuid
+  createdByMembershipId   String        @db.Uuid
+  updatedByMembershipId   String        @db.Uuid
+  plannedStartAt          DateTime?
+  plannedEndAt            DateTime?
+  startedAt               DateTime?
+  completedAt             DateTime?
+  cancelledAt             DateTime?
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
+  organization            Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  leadAuditorMembership   Membership?   @relation("AuditLeadAuditor", fields: [organizationId, leadAuditorMembershipId], references: [organizationId, id], onDelete: Restrict)
+  createdByMembership     Membership    @relation("AuditCreatedBy", fields: [organizationId, createdByMembershipId], references: [organizationId, id], onDelete: Restrict)
+  updatedByMembership     Membership    @relation("AuditUpdatedBy", fields: [organizationId, updatedByMembershipId], references: [organizationId, id], onDelete: Restrict)
+  members                 AuditMember[]
+  scopes                  AuditScope[]
+  tests                   AuditTest[]
+
+  @@unique([organizationId, code])
+  @@unique([organizationId, id])
+  @@index([organizationId, status, updatedAt])
+  @@index([organizationId, type, updatedAt])
+  @@index([organizationId, leadAuditorMembershipId])
+  @@index([organizationId, plannedStartAt, plannedEndAt])
+}
+
+model AuditMember {
+  id                  String          @id @default(uuid()) @db.Uuid
+  organizationId      String          @db.Uuid
+  auditId             String          @db.Uuid
+  membershipId        String          @db.Uuid
+  role                AuditMemberRole
+  addedByMembershipId String          @db.Uuid
+  addedAt             DateTime        @default(now())
+  organization        Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  audit               Audit           @relation(fields: [organizationId, auditId], references: [organizationId, id], onDelete: Cascade)
+  membership          Membership      @relation("AuditMemberMembership", fields: [organizationId, membershipId], references: [organizationId, id], onDelete: Restrict)
+  addedByMembership   Membership      @relation("AuditMemberAddedBy", fields: [organizationId, addedByMembershipId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, auditId, membershipId])
+  @@unique([organizationId, id])
+  @@index([organizationId, auditId, role])
+  @@index([organizationId, membershipId])
+}
+
+model AuditScope {
+  id                        String                   @id @default(uuid()) @db.Uuid
+  organizationId            String                   @db.Uuid
+  auditId                   String                   @db.Uuid
+  type                      AuditScopeType
+  organizationFrameworkId   String?                  @db.Uuid
+  organizationRequirementId String?                  @db.Uuid
+  controlId                 String?                  @db.Uuid
+  addedByMembershipId       String                   @db.Uuid
+  createdAt                 DateTime                 @default(now())
+  organization              Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  audit                     Audit                    @relation(fields: [organizationId, auditId], references: [organizationId, id], onDelete: Cascade)
+  organizationFramework     OrganizationFramework?   @relation(fields: [organizationId, organizationFrameworkId], references: [organizationId, id], onDelete: Cascade)
+  organizationRequirement   OrganizationRequirement? @relation(fields: [organizationId, organizationRequirementId], references: [organizationId, id], onDelete: Cascade)
+  control                   Control?                 @relation(fields: [organizationId, controlId], references: [organizationId, id], onDelete: Cascade)
+  addedByMembership         Membership               @relation("AuditScopeAddedBy", fields: [organizationId, addedByMembershipId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@unique([organizationId, auditId, organizationFrameworkId])
+  @@unique([organizationId, auditId, organizationRequirementId])
+  @@unique([organizationId, auditId, controlId])
+  @@index([organizationId, auditId, type])
+  @@index([organizationId, organizationFrameworkId])
+  @@index([organizationId, organizationRequirementId])
+  @@index([organizationId, controlId])
+}
+
+model AuditTest {
+  id                        String                   @id @default(uuid()) @db.Uuid
+  organizationId            String                   @db.Uuid
+  auditId                   String                   @db.Uuid
+  code                      String
+  title                     String
+  description               String?
+  controlId                 String?                  @db.Uuid
+  organizationRequirementId String?                  @db.Uuid
+  procedure                 String
+  expectedResult            String
+  status                    AuditTestStatus          @default(NOT_STARTED)
+  result                    AuditTestResult?
+  assignedToMembershipId    String?                  @db.Uuid
+  startedAt                 DateTime?
+  completedAt               DateTime?
+  notes                     String?
+  createdByMembershipId     String                   @db.Uuid
+  updatedByMembershipId     String                   @db.Uuid
+  createdAt                 DateTime                 @default(now())
+  updatedAt                 DateTime                 @updatedAt
+  organization              Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  audit                     Audit                    @relation(fields: [organizationId, auditId], references: [organizationId, id], onDelete: Cascade)
+  control                   Control?                 @relation(fields: [organizationId, controlId], references: [organizationId, id], onDelete: Restrict)
+  organizationRequirement   OrganizationRequirement? @relation(fields: [organizationId, organizationRequirementId], references: [organizationId, id], onDelete: Restrict)
+  assignedToMembership      Membership?              @relation("AuditTestAssignee", fields: [organizationId, assignedToMembershipId], references: [organizationId, id], onDelete: Restrict)
+  createdByMembership       Membership               @relation("AuditTestCreatedBy", fields: [organizationId, createdByMembershipId], references: [organizationId, id], onDelete: Restrict)
+  updatedByMembership       Membership               @relation("AuditTestUpdatedBy", fields: [organizationId, updatedByMembershipId], references: [organizationId, id], onDelete: Restrict)
+  evidenceLinks             AuditTestEvidence[]
+  observations              AuditTestObservation[]
+
+  @@unique([organizationId, auditId, code])
+  @@unique([organizationId, id])
+  @@index([organizationId, auditId, status, updatedAt])
+  @@index([organizationId, result])
+  @@index([organizationId, assignedToMembershipId])
+  @@index([organizationId, controlId])
+  @@index([organizationId, organizationRequirementId])
+}
+
+model AuditTestEvidence {
+  id                   String          @id @default(uuid()) @db.Uuid
+  organizationId       String          @db.Uuid
+  auditTestId          String          @db.Uuid
+  evidenceId           String          @db.Uuid
+  evidenceVersionId    String          @db.Uuid
+  linkedByMembershipId String          @db.Uuid
+  linkedAt             DateTime        @default(now())
+  organization         Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  auditTest            AuditTest       @relation(fields: [organizationId, auditTestId], references: [organizationId, id], onDelete: Cascade)
+  evidence             Evidence        @relation(fields: [organizationId, evidenceId], references: [organizationId, id], onDelete: Cascade)
+  evidenceVersion      EvidenceVersion @relation(fields: [organizationId, evidenceVersionId], references: [organizationId, id], onDelete: Restrict)
+  linkedByMembership   Membership      @relation("AuditTestEvidenceLinkedBy", fields: [organizationId, linkedByMembershipId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@unique([organizationId, auditTestId, evidenceVersionId])
+  @@index([organizationId, auditTestId, linkedAt])
+  @@index([organizationId, evidenceId])
+  @@index([organizationId, evidenceVersionId])
+}
+
+model AuditTestObservation {
+  id                    String       @id @default(uuid()) @db.Uuid
+  organizationId        String       @db.Uuid
+  auditTestId           String       @db.Uuid
+  content               String
+  createdByMembershipId String       @db.Uuid
+  updatedByMembershipId String       @db.Uuid
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  auditTest             AuditTest    @relation(fields: [organizationId, auditTestId], references: [organizationId, id], onDelete: Cascade)
+  createdByMembership   Membership   @relation("AuditTestObservationCreatedBy", fields: [organizationId, createdByMembershipId], references: [organizationId, id], onDelete: Restrict)
+  updatedByMembership   Membership   @relation("AuditTestObservationUpdatedBy", fields: [organizationId, updatedByMembershipId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@index([organizationId, auditTestId, createdAt])
 }
 
 model RiskControl {
