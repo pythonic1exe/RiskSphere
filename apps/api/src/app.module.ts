@@ -9,6 +9,7 @@ import { EmailModule } from './modules/email';
 import { OrganizationsModule } from './modules/organizations/organizations.module';
 import { InvitationsModule } from './modules/invitations/invitations.module';
 import { FrameworksModule } from './modules/frameworks/frameworks.module';
+import { RisksModule } from './modules/risks/risks.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { FrameworksModule } from './modules/frameworks/frameworks.module';
     OrganizationsModule,
     InvitationsModule,
     FrameworksModule,
+    RisksModule,
   ],
 })
 export class AppModule {}

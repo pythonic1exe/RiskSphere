@@ -58,6 +58,38 @@ enum SessionStatus {
   EXPIRED
 }
 
+enum RiskStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+  ARCHIVED
+}
+
+enum RiskAssessmentType {
+  INHERENT
+  RESIDUAL
+}
+
+enum RiskSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum RiskTreatmentStrategy {
+  MITIGATE
+  ACCEPT
+  AVOID
+  TRANSFER
+}
+
+enum RiskTreatmentStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
 model User {
   id                    String     @id @default(uuid()) @db.Uuid
   email                 String     @unique
@@ -102,6 +134,9 @@ model Organization {
   onboarding            OrganizationOnboarding?
   invitations           Invitation[]
   frameworkSelections   OrganizationFrameworkSelection[]
+  risks                 Risk[]
+  riskAssessments       RiskAssessment[]
+  riskTreatments        RiskTreatment[]
 
   @@index([status, updatedAt])
 }
@@ -120,6 +155,12 @@ model Membership {
   acceptedInvitations   Invitation[]    @relation("InvitationAcceptedMembership")
   revokedInvitations    Invitation[]    @relation("InvitationRevokedByMembership")
   selectedFrameworkSelections OrganizationFrameworkSelection[] @relation("FrameworkSelectionSelectedByMembership")
+  ownedRisks            Risk[]          @relation("RiskOwner")
+  createdRisks          Risk[]          @relation("RiskCreatedBy")
+  updatedRisks          Risk[]          @relation("RiskUpdatedBy")
+  riskAssessments       RiskAssessment[]
+  ownedRiskTreatments   RiskTreatment[] @relation("RiskTreatmentOwner")
+  acceptedRiskTreatments RiskTreatment[] @relation("RiskTreatmentAcceptedBy")
 
   @@unique([organizationId, userId])
   @@unique([organizationId, id])
@@ -227,4 +268,78 @@ model OrganizationFrameworkSelection {
 
   @@unique([organizationId, frameworkCatalogId])
   @@index([organizationId])
+}
+
+model Risk {
+  id                    String       @id @default(uuid()) @db.Uuid
+  organizationId        String       @db.Uuid
+  code                  String
+  title                 String
+  description           String?
+  category              String?
+  status                RiskStatus   @default(DRAFT)
+  ownerMembershipId     String?      @db.Uuid
+  nextReviewAt          DateTime?
+  lastReviewedAt        DateTime?
+  createdByMembershipId String       @db.Uuid
+  updatedByMembershipId String       @db.Uuid
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  archivedAt            DateTime?
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  ownerMembership       Membership?  @relation("RiskOwner", fields: [organizationId, ownerMembershipId], references: [organizationId, id], onDelete: Restrict)
+  createdByMembership   Membership   @relation("RiskCreatedBy", fields: [organizationId, createdByMembershipId], references: [organizationId, id], onDelete: Restrict)
+  updatedByMembership   Membership   @relation("RiskUpdatedBy", fields: [organizationId, updatedByMembershipId], references: [organizationId, id], onDelete: Restrict)
+  assessments           RiskAssessment[]
+  treatment             RiskTreatment?
+
+  @@unique([organizationId, code])
+  @@unique([organizationId, id])
+  @@index([organizationId, status, updatedAt])
+  @@index([organizationId, ownerMembershipId])
+  @@index([organizationId, category])
+}
+
+model RiskAssessment {
+  id                    String             @id @default(uuid()) @db.Uuid
+  organizationId        String             @db.Uuid
+  riskId                String             @db.Uuid
+  type                  RiskAssessmentType
+  likelihood            Int
+  impact                Int
+  score                 Int
+  severity              RiskSeverity
+  rationale             String?
+  assessedByMembershipId String            @db.Uuid
+  assessedAt            DateTime           @default(now())
+  createdAt             DateTime           @default(now())
+  organization          Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  risk                  Risk               @relation(fields: [organizationId, riskId], references: [organizationId, id], onDelete: Cascade)
+  assessedByMembership  Membership         @relation(fields: [organizationId, assessedByMembershipId], references: [organizationId, id], onDelete: Restrict)
+
+  @@index([organizationId, riskId, type, assessedAt])
+  @@index([organizationId, assessedByMembershipId])
+}
+
+model RiskTreatment {
+  id                    String                @id @default(uuid()) @db.Uuid
+  organizationId        String                @db.Uuid
+  riskId                String                @db.Uuid
+  strategy              RiskTreatmentStrategy
+  status                RiskTreatmentStatus   @default(NOT_STARTED)
+  plan                  String?
+  targetDate            DateTime?
+  ownerMembershipId     String?               @db.Uuid
+  acceptedByMembershipId String?              @db.Uuid
+  acceptedAt            DateTime?
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  organization          Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  risk                  Risk                  @relation(fields: [organizationId, riskId], references: [organizationId, id], onDelete: Cascade)
+  ownerMembership       Membership?           @relation("RiskTreatmentOwner", fields: [organizationId, ownerMembershipId], references: [organizationId, id], onDelete: Restrict)
+  acceptedByMembership  Membership?           @relation("RiskTreatmentAcceptedBy", fields: [organizationId, acceptedByMembershipId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, riskId])
+  @@index([organizationId, status, targetDate])
+  @@index([organizationId, ownerMembershipId])
 }
