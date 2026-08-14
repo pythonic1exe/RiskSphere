@@ -1,0 +1,24 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import * as api from './organization-api';
+import { organizationKeys as keys } from './organization-query-keys';
+const invalidate = (client: ReturnType<typeof useQueryClient>, _id: string) => { void client.invalidateQueries({ queryKey: keys.all }); void client.invalidateQueries({ queryKey: ['organizations', 'mine'] }); };
+export const useOrganization = (id?: string) => useQuery({ queryKey: keys.detail(id ?? ''), queryFn: () => api.getOrganization(id!), enabled: Boolean(id) });
+export const useOrganizationSummary = (id?: string) => useQuery({ queryKey: keys.summary(id ?? ''), queryFn: () => api.getOrganizationSummary(id!), enabled: Boolean(id), staleTime: 30000 });
+export const useMembers = (id: string | undefined, params: api.MemberListParams) => useQuery({ queryKey: keys.members(id ?? '', params), queryFn: () => api.getMembers(id!, params), enabled: Boolean(id), placeholderData: (previous) => previous });
+export const useMember = (id: string | undefined, memberId: string | null) => useQuery({ queryKey: keys.member(id ?? '', memberId ?? ''), queryFn: () => api.getMember(id!, memberId!), enabled: Boolean(id && memberId) });
+export const useInvitations = (id: string | undefined, params: api.InvitationListParams) => useQuery({ queryKey: keys.invitations(id ?? '', params), queryFn: () => api.getInvitations(id!, params), enabled: Boolean(id) });
+export const useUnits = (id?: string, params: api.UnitListParams = {}) => useQuery({ queryKey: keys.units(id ?? '', params), queryFn: () => api.getUnits(id!, params), enabled: Boolean(id) });
+export const useUnit = (id: string | undefined, unitId: string | null) => useQuery({ queryKey: keys.unit(id ?? '', unitId ?? ''), queryFn: () => api.getUnit(id!, unitId!), enabled: Boolean(id && unitId) });
+export const useUnitMembers = (id: string | undefined, unitId: string | null) => useQuery({ queryKey: keys.unitMembers(id ?? '', unitId ?? ''), queryFn: () => api.getUnitMembers(id!, unitId!), enabled: Boolean(id && unitId) });
+function mutation<T>(id: string | undefined, fn: (body: T) => Promise<unknown>) { const client = useQueryClient(); return useMutation({ mutationFn: fn, onSuccess: () => { if (id) invalidate(client, id); } }); }
+export const useUpdateOrganization = (id?: string) => mutation<api.UpdateOrganizationInput>(id, (body) => api.updateOrganization(id!, body));
+export const useUpdateMember = (id: string | undefined, memberId: string) => mutation<api.UpdateMemberInput>(id, (body) => api.updateMember(id!, memberId, body));
+export const useRemoveMember = (id: string | undefined, memberId: string) => mutation<void>(id, () => api.removeMember(id!, memberId));
+export const useCreateInvitation = (id?: string) => mutation<api.CreateInvitationInput>(id, (body) => api.createInvitation(id!, body));
+export const useRevokeInvitation = (id: string | undefined, invitationId: string) => mutation<void>(id, () => api.revokeInvitation(id!, invitationId));
+export const useResendInvitation = (id: string | undefined, invitationId: string) => mutation<void>(id, () => api.resendInvitation(id!, invitationId));
+export const useCreateUnit = (id?: string) => mutation<api.UnitInput>(id, (body) => api.createUnit(id!, body));
+export const useUpdateUnit = (id: string | undefined, unitId: string) => mutation<api.UpdateUnitInput>(id, (body) => api.updateUnit(id!, unitId, body));
+export const useDeactivateUnit = (id: string | undefined, unitId: string) => mutation<void>(id, () => api.deactivateUnit(id!, unitId));
+export const useAddUnitMember = (id: string | undefined, unitId: string) => mutation<string>(id, (membershipId) => api.addUnitMember(id!, unitId, membershipId));
+export const useRemoveUnitMember = (id: string | undefined, unitId: string) => mutation<string>(id, (membershipId) => api.removeUnitMember(id!, unitId, membershipId));
