@@ -27,6 +27,10 @@ export class ControlsController {
   @Get('controls')
   list(@Req() req: AuthenticatedRequest, @Query() dto: ListControlsDto) { return this.controlsService.list(this.access(req), dto); }
 
+  @ApiOperation({ summary: 'Get organization-wide control operations summary' })
+  @Get('controls/summary')
+  summary(@Req() req: AuthenticatedRequest) { return this.controlsService.summary(this.access(req)); }
+
   @ApiOperation({ summary: 'Create a control' }) @ApiBody({ type: CreateControlDto })
   @Post('controls')
   create(@Req() req: AuthenticatedRequest, @Body() dto: CreateControlDto) { return this.controlsService.create(this.access(req), dto); }

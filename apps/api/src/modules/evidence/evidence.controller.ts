@@ -34,6 +34,10 @@ export class EvidenceController {
   @ApiOkResponse({ description: 'Paginated evidence records' })
   list(@Req() req: AuthenticatedRequest, @Query() dto: ListEvidenceDto) { return this.evidenceService.list(this.access(req), dto); }
 
+  @Get('evidence/summary')
+  @ApiOperation({ summary: 'Get organization-wide evidence health summary' })
+  summary(@Req() req: AuthenticatedRequest) { return this.evidenceService.summary(this.access(req)); }
+
   @Post('evidence')
   @OrganizationRoles(ORGANIZATION_ROLE_CODES.OWNER, ORGANIZATION_ROLE_CODES.GRC_ADMIN, ORGANIZATION_ROLE_CODES.COMPLIANCE_MANAGER)
   @ApiOperation({ summary: 'Create an evidence record' })

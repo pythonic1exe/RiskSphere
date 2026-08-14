@@ -69,10 +69,7 @@ export class OrganizationsController {
   @ApiConflictResponse({ description: 'Organization slug already exists' })
   @UseGuards(JwtAuthGuard)
   @Post()
-  createOrganization(
-    @Req() request: AuthenticatedRequest,
-    @Body() dto: CreateOrganizationDto,
-  ) {
+  createOrganization(@Req() request: AuthenticatedRequest, @Body() dto: CreateOrganizationDto) {
     if (!request.authUser) {
       throw new InternalServerErrorException('Authenticated user missing');
     }
@@ -97,6 +94,16 @@ export class OrganizationsController {
     }
 
     return this.organizationsService.getOnboarding(request.organizationAccess);
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List active organization members for tenant-scoped selectors' })
+  @UseGuards(JwtAuthGuard, OrganizationRoleGuard)
+  @Get(':organizationId/members')
+  listMembers(@Req() request: AuthenticatedRequest) {
+    if (!request.organizationAccess)
+      throw new InternalServerErrorException('Organization access missing');
+    return this.organizationsService.listActiveMembers(request.organizationAccess);
   }
 
   @ApiBearerAuth()

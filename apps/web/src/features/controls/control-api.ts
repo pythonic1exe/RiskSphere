@@ -52,6 +52,16 @@ export type Control = {
 }
 
 export type ControlListResponse = { data: Control[]; pagination: { page: number; pageSize: number; total: number; totalPages: number } }
+export type ControlSummary = {
+  total: number
+  active: number
+  overdueExecutions: number
+  dueSoon: number
+  unscheduled: number
+  openExecutions: number
+  completedExecutions: number
+  attention: Array<{ id: string; controlId: string; code: string; title: string; periodLabel: string; dueAt: string; status: ExecutionStatus; reason: string }>
+}
 export type ControlListParams = { search?: string; status?: ControlStatus | "ALL"; type?: ControlType | "ALL"; automationType?: ControlAutomationType | "ALL"; frequency?: ControlFrequency | "ALL"; ownerMembershipId?: string; riskId?: string; page?: number; pageSize?: number; sortBy?: "code" | "title" | "updatedAt" | "status"; sortOrder?: "asc" | "desc" }
 
 function queryString(params: ControlListParams) {
@@ -66,6 +76,7 @@ function queryString(params: ControlListParams) {
 }
 
 export function getControls(organizationId: string, params: ControlListParams) { return apiRequest<ControlListResponse>(`/organizations/${organizationId}/controls?${queryString(params)}`) }
+export function getControlSummary(organizationId: string) { return apiRequest<ControlSummary>(`/organizations/${organizationId}/controls/summary`) }
 export function getControl(organizationId: string, controlId: string) { return apiRequest<Control>(`/organizations/${organizationId}/controls/${controlId}`) }
 export function createControl(organizationId: string, body: { title: string; description?: string; category?: string; type: ControlType; automationType: ControlAutomationType; frequency: ControlFrequency; ownerMembershipId?: string }) { return apiRequest<Control>(`/organizations/${organizationId}/controls`, { method: "POST", body: JSON.stringify(body) }) }
 export function updateControl(organizationId: string, controlId: string, body: Partial<Omit<Parameters<typeof createControl>[1], "ownerMembershipId">> & { ownerMembershipId?: string }) { return apiRequest<Control>(`/organizations/${organizationId}/controls/${controlId}`, { method: "PATCH", body: JSON.stringify(body) }) }

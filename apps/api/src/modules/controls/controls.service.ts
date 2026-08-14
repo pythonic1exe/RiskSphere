@@ -8,6 +8,7 @@ import type { OrganizationAccess } from '../../common/auth/auth.types';
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
 import { PrismaService } from '../../database/prisma.service';
 import { canTransitionControlExecution, isExecutionOverdue, nextControlCode } from './controls.utils';
+import { controlAttentionReason, controlSummaryWindow } from './controls-summary.utils';
 import type { CompleteControlExecutionDto, CreateControlDto, CreateControlExecutionDto, ListControlsDto, UpdateControlDto, UpdateControlExecutionDto } from './dto';
 
 const CONTROL_WRITE_ROLES = [
@@ -130,6 +131,30 @@ export class ControlsService {
       this.prisma.control.count({ where }),
     ]);
     return { data: controls.map((control) => this.mapControl(control)), pagination: { page, pageSize, total, totalPages: Math.ceil(total / pageSize) } };
+  }
+
+  async summary(access: OrganizationAccess) {
+    const organizationId = this.organizationId(access);
+    const now = new Date();
+    const { to } = controlSummaryWindow(now);
+    const openExecutionWhere: Prisma.ControlExecutionWhereInput = { organizationId, status: { notIn: [ControlExecutionStatus.COMPLETED, ControlExecutionStatus.CANCELLED] } };
+    const [total, active, overdueExecutions, dueSoon, unscheduled, openExecutions, completedExecutions, attention] = await Promise.all([
+      this.prisma.control.count({ where: { organizationId } }),
+      this.prisma.control.count({ where: { organizationId, status: ControlStatus.ACTIVE } }),
+      this.prisma.controlExecution.count({ where: { ...openExecutionWhere, dueAt: { lt: now } } }),
+      this.prisma.controlExecution.count({ where: { ...openExecutionWhere, dueAt: { gte: now, lte: to } } }),
+      this.prisma.control.count({ where: { organizationId, status: ControlStatus.ACTIVE, executions: { none: {} } } }),
+      this.prisma.controlExecution.count({ where: openExecutionWhere }),
+      this.prisma.controlExecution.count({ where: { organizationId, status: ControlExecutionStatus.COMPLETED } }),
+      this.prisma.controlExecution.findMany({
+        where: { ...openExecutionWhere, dueAt: { lte: to } }, orderBy: { dueAt: 'asc' }, take: 8,
+        include: { control: { select: { code: true, title: true } } },
+      }),
+    ]);
+    return {
+      total, active, overdueExecutions, dueSoon, unscheduled, openExecutions, completedExecutions,
+      attention: attention.map((execution) => ({ id: execution.id, controlId: execution.controlId, code: execution.control.code, title: execution.control.title, periodLabel: execution.periodLabel, dueAt: execution.dueAt, status: execution.status, reason: controlAttentionReason(execution, now) ?? 'Operational attention' })),
+    };
   }
 
   async create(access: OrganizationAccess, dto: CreateControlDto) {

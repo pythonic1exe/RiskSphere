@@ -12,6 +12,7 @@ import type { CreateEvidenceDto, CreateEvidenceVersionDto, ListEvidenceDto, Upda
 import { EVIDENCE_STORAGE_SERVICE } from './evidence-storage.service';
 import type { EvidenceStorageService } from './evidence-storage.service';
 import { nextEvidenceVersion, validateVersionPayload } from './evidence.utils';
+import { evidenceAttentionReason, evidenceSummaryWindow } from './evidence-summary.utils';
 
 export interface UploadedEvidenceFile {
   originalname: string;
@@ -159,6 +160,40 @@ export class EvidenceService {
       this.prisma.evidence.count({ where }),
     ]);
     return { data: records.map((record) => this.mapEvidence(record)), pagination: { page, pageSize, total, totalPages: Math.ceil(total / pageSize) } };
+  }
+
+  async summary(access: OrganizationAccess) {
+    const organizationId = this.organizationId(access);
+    const now = new Date();
+    const { to } = evidenceSummaryWindow(now);
+    const nonArchived = { organizationId, status: { not: EvidenceStatus.ARCHIVED } } as const;
+    const expiredWhere = { ...nonArchived, OR: [{ status: EvidenceStatus.EXPIRED }, { expiresAt: { lt: now } }] };
+    const currentWhere = { ...nonArchived, status: { notIn: [EvidenceStatus.ARCHIVED, EvidenceStatus.EXPIRED] }, OR: [{ expiresAt: null }, { expiresAt: { gte: now } }] };
+    const [total, current, expiringSoon, expired, missingVersion, withoutControl, withoutExecution, linkedToControl, linkedToExecution, hasVersion, recentlyUpdated, attention] = await Promise.all([
+      this.prisma.evidence.count({ where: nonArchived }),
+      this.prisma.evidence.count({ where: currentWhere }),
+      this.prisma.evidence.count({ where: { ...nonArchived, expiresAt: { gte: now, lte: to } } }),
+      this.prisma.evidence.count({ where: expiredWhere }),
+      this.prisma.evidence.count({ where: { ...nonArchived, versions: { none: {} } } }),
+      this.prisma.evidence.count({ where: { ...nonArchived, controlLinks: { none: {} } } }),
+      this.prisma.evidence.count({ where: { ...nonArchived, executionLinks: { none: {} } } }),
+      this.prisma.evidence.count({ where: { ...nonArchived, controlLinks: { some: {} } } }),
+      this.prisma.evidence.count({ where: { ...nonArchived, executionLinks: { some: {} } } }),
+      this.prisma.evidence.count({ where: { ...nonArchived, versions: { some: {} } } }),
+      this.prisma.evidence.findMany({ where: nonArchived, orderBy: { updatedAt: 'desc' }, take: 5, select: { id: true, title: true, type: true, updatedAt: true, ownerMembership: { include: { user: { select: { email: true } } } }, versions: { orderBy: { versionNumber: 'desc' }, take: 1, select: { versionNumber: true, fileName: true, externalUrl: true, createdAt: true } } } }),
+      this.prisma.evidence.findMany({
+        where: { ...nonArchived, OR: [{ status: EvidenceStatus.EXPIRED }, { expiresAt: { lte: to } }, { versions: { none: {} } }, { controlLinks: { none: {} } }, { executionLinks: { none: {} } }] },
+        orderBy: { updatedAt: 'desc' }, take: 3,
+        select: { id: true, title: true, expiresAt: true, versions: { take: 1, orderBy: { versionNumber: 'desc' }, select: { id: true } }, _count: { select: { controlLinks: true, executionLinks: true } } },
+      }),
+    ]);
+    const percentage = (count: number) => total ? Math.round((count / total) * 100) : 0;
+    return {
+      total, current, expiringSoon, expired, missingVersion, withoutControl, withoutExecution,
+      traceability: { linkedToControlCount: linkedToControl, linkedToControlPercent: percentage(linkedToControl), linkedToExecutionCount: linkedToExecution, linkedToExecutionPercent: percentage(linkedToExecution), hasVersionCount: hasVersion, hasVersionPercent: percentage(hasVersion) },
+      recentlyUpdated: recentlyUpdated.map((item) => ({ id: item.id, title: item.title, type: item.type, updatedAt: item.updatedAt, owner: item.ownerMembership?.user?.email ?? null, currentVersion: item.versions[0] ?? null })),
+      attention: attention.map((item) => ({ id: item.id, title: item.title, expiresAt: item.expiresAt, reason: evidenceAttentionReason({ expiresAt: item.expiresAt, hasVersion: Boolean(item.versions[0]), hasControl: item._count.controlLinks > 0, hasExecution: item._count.executionLinks > 0 }, now) ?? 'Evidence attention' })),
+    };
   }
 
   async findOne(access: OrganizationAccess, evidenceId: string) { return this.mapEvidence(await this.getRecord(access, evidenceId)); }

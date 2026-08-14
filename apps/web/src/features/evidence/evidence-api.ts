@@ -58,6 +58,18 @@ export type EvidenceListParams = {
   sortOrder?: "asc" | "desc"
 }
 export type EvidenceListResponse = { data: Evidence[]; pagination: EvidencePagination }
+export type EvidenceSummary = {
+  total: number
+  current: number
+  expiringSoon: number
+  expired: number
+  missingVersion: number
+  withoutControl: number
+  withoutExecution: number
+  traceability: { linkedToControlCount: number; linkedToControlPercent: number; linkedToExecutionCount: number; linkedToExecutionPercent: number; hasVersionCount: number; hasVersionPercent: number }
+  recentlyUpdated: Array<{ id: string; title: string; type: EvidenceType; updatedAt: string; owner: string | null; currentVersion: Pick<EvidenceVersion, "versionNumber" | "fileName" | "externalUrl" | "createdAt"> | null }>
+  attention: Array<{ id: string; title: string; expiresAt: string | null; reason: string }>
+}
 
 function queryString(params: EvidenceListParams) {
   const query = new globalThis.URLSearchParams()
@@ -70,6 +82,7 @@ function queryString(params: EvidenceListParams) {
 }
 
 export function getEvidence(organizationId: string, params: EvidenceListParams) { return apiRequest<EvidenceListResponse>(`/organizations/${organizationId}/evidence?${queryString(params)}`) }
+export function getEvidenceSummary(organizationId: string) { return apiRequest<EvidenceSummary>(`/organizations/${organizationId}/evidence/summary`) }
 export function getEvidenceDetail(organizationId: string, evidenceId: string) { return apiRequest<Evidence>(`/organizations/${organizationId}/evidence/${evidenceId}`) }
 export function createEvidence(organizationId: string, body: { title: string; description?: string; type: EvidenceType; ownerMembershipId?: string | null; effectiveFrom?: string | null; effectiveTo?: string | null; expiresAt?: string | null }) { return apiRequest<Evidence>(`/organizations/${organizationId}/evidence`, { method: "POST", body: JSON.stringify(body) }) }
 export function updateEvidence(organizationId: string, evidenceId: string, body: Partial<Parameters<typeof createEvidence>[1]>) { return apiRequest<Evidence>(`/organizations/${organizationId}/evidence/${evidenceId}`, { method: "PATCH", body: JSON.stringify(body) }) }

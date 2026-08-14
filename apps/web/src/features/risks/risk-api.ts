@@ -72,6 +72,17 @@ export type RiskListResponse = {
   pagination: { page: number; pageSize: number; total: number; totalPages: number }
 }
 
+export type RiskSummary = {
+  total: number
+  active: number
+  criticalHigh: number
+  withoutAssessment: number
+  withoutTreatment: number
+  dueForReview: number
+  severityDistribution: { LOW: number; MEDIUM: number; HIGH: number; CRITICAL: number; UNRATED: number }
+  attention: Array<{ id: string; code: string; title: string; reason: string }>
+}
+
 export type RiskListParams = {
   search?: string
   status?: RiskStatus | "ALL"
@@ -95,6 +106,8 @@ function queryString(params: RiskListParams) {
 export function getRisks(organizationId: string, params: RiskListParams) {
   return apiRequest<RiskListResponse>(`/organizations/${organizationId}/risks?${queryString(params)}`)
 }
+
+export function getRiskSummary(organizationId: string) { return apiRequest<RiskSummary>(`/organizations/${organizationId}/risks/summary`) }
 
 export function getRisk(organizationId: string, riskId: string) {
   return apiRequest<Risk>(`/organizations/${organizationId}/risks/${riskId}`)
