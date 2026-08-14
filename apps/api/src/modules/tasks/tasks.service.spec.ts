@@ -42,7 +42,7 @@ describe('TasksService', () => {
     const result = await new TasksService(prisma, activities).start(access([], 'member-1'), 'task-1');
 
     expect(result.status).toBe('IN_PROGRESS');
-    expect(tx.task.updateMany).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ status: 'TODO', organizationId: 'org-1' }) }));
+    expect(tx.task.updateMany).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ status: 'TODO', organizationId: 'org-1' }), data: expect.objectContaining({ status: 'IN_PROGRESS' }) }));
     expect(activities.append).toHaveBeenCalledWith(tx, expect.objectContaining({ type: 'STARTED', fromStatus: 'TODO', toStatus: 'IN_PROGRESS' }));
   });
 });

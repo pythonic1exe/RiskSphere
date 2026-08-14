@@ -134,7 +134,7 @@ export class TasksService {
     if (!allowedStates.includes(current.status) || !canTransitionTask(current.status, next)) throw new ConflictException(`Invalid Task lifecycle transition from ${current.status} to ${next}`);
     const organizationId = this.organizationId(access);
     return this.prisma.$transaction(async (tx) => {
-      const guarded = await tx.task.updateMany({ where: { organizationId, id: taskId, status: current.status }, data: { ...changes(current), updatedByMembershipId: access.membership.id } });
+      const guarded = await tx.task.updateMany({ where: { organizationId, id: taskId, status: current.status }, data: { ...changes(current), status: next, updatedByMembershipId: access.membership.id } });
       if (guarded.count !== 1) throw new ConflictException('Task changed before the workflow operation could complete');
       const updated = await tx.task.findUniqueOrThrow({ where: { organizationId_id: { organizationId, id: taskId } }, include: this.include() });
       await this.activities.append(tx, { organizationId, taskId, actorMembershipId: access.membership.id, type: activityType, fromStatus: current.status, toStatus: next, ...(metadata ? { metadata } : {}) });
