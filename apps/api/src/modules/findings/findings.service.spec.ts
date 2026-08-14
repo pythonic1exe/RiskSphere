@@ -54,4 +54,16 @@ describe('FindingsService', () => {
 
     await expect(service.promoteObservation(access(), 'test-1', 'observation-1', { title: 'Finding', severity: 'HIGH' } as any)).rejects.toThrow('already been promoted');
   });
+
+  it('blocks validation submission while non-cancelled Finding Tasks remain incomplete', async () => {
+    const prisma = {
+      finding: { findFirst: vi.fn().mockResolvedValue(finding({ status: 'IN_REMEDIATION', ownerMembershipId: 'member-2', remediationPlan: 'Plan' })) },
+      findingEvidence: { count: vi.fn().mockResolvedValue(1) },
+      task: { count: vi.fn().mockResolvedValue(1) },
+    } as any;
+    const service = new FindingsService(prisma, {} as any);
+
+    await expect(service.submitForValidation(access(), 'finding-1')).rejects.toThrow('remediation tasks remain incomplete');
+    expect(prisma.task.count).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ findingId: 'finding-1', status: { notIn: ['DONE', 'CANCELLED'] } }) }));
+  });
 });

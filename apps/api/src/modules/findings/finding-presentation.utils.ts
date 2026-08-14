@@ -1,3 +1,5 @@
+import type { taskCompletionSummary } from '../tasks/tasks.utils';
+
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export function findingSummaryWindow(now: Date) {
@@ -21,7 +23,7 @@ function memberSummary(member: any) {
   return member ? { id: member.id, name: member.user?.email ?? member.id } : null;
 }
 
-export function mapFinding(finding: any, now = new Date()) {
+export function mapFinding(finding: any, now = new Date(), taskSummary?: ReturnType<typeof taskCompletionSummary>) {
   const overdue = findingOverdueState(finding, now);
   const sourceObservation = finding.sourceObservation;
   const sourceTest = sourceObservation?.auditTest;
@@ -65,6 +67,7 @@ export function mapFinding(finding: any, now = new Date()) {
       activities: finding._count?.activities ?? finding.activities?.length ?? 0,
     },
     latestValidation: finding.validations?.[0] ?? null,
+    taskSummary: taskSummary ?? null,
     ...overdue,
   };
 }

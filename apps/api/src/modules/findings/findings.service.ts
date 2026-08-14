@@ -32,6 +32,7 @@ import type {
 import { FindingActivityService } from './finding-activity.service';
 import { findingNumber, canTransitionFinding } from './findings.utils';
 import { mapFinding, mapFindingSummary } from './finding-presentation.utils';
+import { mapFindingTaskSummary } from '../tasks/task-presentation.utils';
 
 const FINDING_WRITE_ROLES = [
   ORGANIZATION_ROLE_CODES.OWNER,
@@ -110,7 +111,9 @@ export class FindingsService {
   }
 
   async findOne(access: OrganizationAccess, findingId: string) {
-    return mapFinding(await this.getRecord(access, findingId));
+    const finding = await this.getRecord(access, findingId);
+    const tasks = await this.prisma.task.findMany({ where: { organizationId: this.organizationId(access), findingId }, select: { status: true } });
+    return mapFinding(finding, new Date(), mapFindingTaskSummary(tasks));
   }
 
   async create(access: OrganizationAccess, dto: CreateFindingDto) {
@@ -182,6 +185,8 @@ export class FindingsService {
     if (!current.remediationPlan?.trim()) throw new ConflictException('Remediation plan is required before validation');
     const evidence = await this.prisma.findingEvidence.count({ where: { organizationId: this.organizationId(access), findingId, purpose: FindingEvidencePurpose.REMEDIATION } });
     if (!evidence) throw new ConflictException('At least one remediation evidence version is required before validation');
+    const incompleteTasks = await this.prisma.task.count({ where: { organizationId: this.organizationId(access), findingId, status: { notIn: ['DONE', 'CANCELLED'] } } });
+    if (incompleteTasks > 0) throw new ConflictException('Cannot submit Finding for validation while remediation tasks remain incomplete.');
     return this.transition(access, findingId, FindingStatus.READY_FOR_VALIDATION, FindingActivityType.SUBMITTED_FOR_VALIDATION, { submittedForValidationAt: new Date() });
   }
 

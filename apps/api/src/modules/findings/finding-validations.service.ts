@@ -28,6 +28,8 @@ export class FindingValidationsService {
     const organizationId = access.organization.id;
     const current = await this.findings.getRecord(access, findingId);
     if (current.status !== FindingStatus.READY_FOR_VALIDATION) throw new ConflictException('Finding must be ready for validation');
+    const incompleteTasks = await this.prisma.task.count({ where: { organizationId, findingId, status: { notIn: ['DONE', 'CANCELLED'] } } });
+    if (incompleteTasks > 0) throw new ConflictException('Cannot validate Finding while remediation tasks remain incomplete.');
     if (dto.decision === FindingValidationDecision.REJECTED && !dto.notes?.trim()) throw new BadRequestException('Validation notes are required when remediation is rejected');
     if (dto.decision === FindingValidationDecision.ACCEPTED && dto.resolutionType && dto.resolutionType !== FindingResolutionType.REMEDIATED) throw new BadRequestException('Accepted validation must use REMEDIATED resolution');
     const nextStatus = dto.decision === FindingValidationDecision.ACCEPTED ? FindingStatus.CLOSED : FindingStatus.IN_REMEDIATION;

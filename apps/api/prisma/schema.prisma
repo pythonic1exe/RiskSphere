@@ -254,6 +254,42 @@ enum FindingActivityType {
   REOPENED
 }
 
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  BLOCKED
+  DONE
+  CANCELLED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum TaskSourceType {
+  MANUAL
+  FINDING
+}
+
+enum TaskActivityType {
+  CREATED
+  UPDATED
+  ASSIGNED
+  UNASSIGNED
+  REASSIGNED
+  PRIORITY_CHANGED
+  DUE_DATE_CHANGED
+  STARTED
+  BLOCKED
+  UNBLOCKED
+  COMPLETED
+  REOPENED
+  CANCELLED
+}
+
 model User {
   id                  String       @id @default(uuid()) @db.Uuid
   email               String       @unique
@@ -323,6 +359,9 @@ model Organization {
   findingEvidence          FindingEvidence[]
   findingValidations       FindingValidation[]
   findingActivities        FindingActivity[]
+  tasks                    Task[]
+  taskSequences            TaskSequence[]
+  taskActivities           TaskActivity[]
 
   @@index([status, updatedAt])
 }
@@ -382,6 +421,10 @@ model Membership {
   linkedFindingEvidence         FindingEvidence[]                @relation("FindingEvidenceLinkedBy")
   findingValidations            FindingValidation[]              @relation("FindingValidationReviewer")
   findingActivities             FindingActivity[]                @relation("FindingActivityActor")
+  assignedTasks                 Task[]                           @relation("TaskAssignee")
+  createdTasks                  Task[]                           @relation("TaskCreatedBy")
+  updatedTasks                  Task[]                           @relation("TaskUpdatedBy")
+  taskActivities                TaskActivity[]                   @relation("TaskActivityActor")
 
   @@unique([organizationId, userId])
   @@unique([organizationId, id])
@@ -989,6 +1032,7 @@ model Finding {
   evidence                 FindingEvidence[]
   validations              FindingValidation[]
   activities               FindingActivity[]
+  tasks                    Task[]
 
   @@unique([organizationId, findingNumber])
   @@unique([organizationId, sourceObservationId])
@@ -1008,6 +1052,74 @@ model FindingSequence {
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@id([organizationId, year])
+}
+
+model TaskSequence {
+  organizationId String       @db.Uuid
+  year           Int
+  nextNumber     Int          @default(1)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@id([organizationId, year])
+}
+
+model Task {
+  id                    String         @id @default(uuid()) @db.Uuid
+  organizationId        String         @db.Uuid
+  taskNumber            String
+  title                 String
+  description           String?
+  status                TaskStatus     @default(TODO)
+  priority              TaskPriority   @default(MEDIUM)
+  sourceType            TaskSourceType
+  findingId             String?        @db.Uuid
+  assigneeMembershipId  String?        @db.Uuid
+  dueDate               DateTime?
+  startedAt             DateTime?
+  completedAt           DateTime?
+  cancelledAt           DateTime?
+  blockedReason         String?
+  completionNotes       String?
+  cancellationReason    String?
+  createdByMembershipId String         @db.Uuid
+  updatedByMembershipId String         @db.Uuid
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+  organization          Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  finding               Finding?       @relation(fields: [organizationId, findingId], references: [organizationId, id], onDelete: Restrict)
+  assigneeMembership    Membership?    @relation("TaskAssignee", fields: [organizationId, assigneeMembershipId], references: [organizationId, id], onDelete: Restrict)
+  createdByMembership   Membership     @relation("TaskCreatedBy", fields: [organizationId, createdByMembershipId], references: [organizationId, id], onDelete: Restrict)
+  updatedByMembership   Membership     @relation("TaskUpdatedBy", fields: [organizationId, updatedByMembershipId], references: [organizationId, id], onDelete: Restrict)
+  activities            TaskActivity[]
+
+  @@unique([organizationId, taskNumber])
+  @@unique([organizationId, id])
+  @@index([organizationId, status, updatedAt])
+  @@index([organizationId, priority, updatedAt])
+  @@index([organizationId, assigneeMembershipId])
+  @@index([organizationId, dueDate])
+  @@index([organizationId, sourceType])
+  @@index([organizationId, findingId])
+  @@index([organizationId, createdAt])
+}
+
+model TaskActivity {
+  id                String           @id @default(uuid()) @db.Uuid
+  organizationId    String           @db.Uuid
+  taskId            String           @db.Uuid
+  actorMembershipId String           @db.Uuid
+  type              TaskActivityType
+  fromStatus        TaskStatus?
+  toStatus          TaskStatus?
+  metadata          Json?
+  createdAt         DateTime         @default(now())
+  organization      Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  task              Task             @relation(fields: [organizationId, taskId], references: [organizationId, id], onDelete: Cascade)
+  actorMembership   Membership       @relation("TaskActivityActor", fields: [organizationId, actorMembershipId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@index([organizationId, taskId, createdAt])
+  @@index([organizationId, actorMembershipId])
 }
 
 model FindingEvidence {
