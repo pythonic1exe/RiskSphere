@@ -18,6 +18,7 @@ import type { ListRisksDto } from './dto/list-risks.dto';
 import type { ReviewRiskDto } from './dto/review-risk.dto';
 import type { UpdateRiskTreatmentDto } from './dto/update-risk-treatment.dto';
 import type { UpdateRiskDto } from './dto/update-risk.dto';
+import { riskAttentionReason, riskSummaryWindow } from './risks-summary.utils';
 
 const RISK_WRITE_ROLES = [
   ORGANIZATION_ROLE_CODES.OWNER,
@@ -76,6 +77,36 @@ export class RisksService {
       this.prisma.risk.count({ where }),
     ]);
     return { data, pagination: { page, pageSize, total, totalPages: Math.ceil(total / pageSize) } };
+  }
+
+  async summary(access: OrganizationAccess) {
+    const organizationId = access.organization.id;
+    const now = new Date();
+    const { to } = riskSummaryWindow(now);
+    const [total, active, withoutAssessment, withoutTreatment, dueForReview, assessments, attention] = await Promise.all([
+      this.prisma.risk.count({ where: { organizationId } }),
+      this.prisma.risk.count({ where: { organizationId, status: RiskStatus.ACTIVE } }),
+      this.prisma.risk.count({ where: { organizationId, assessments: { none: {} } } }),
+      this.prisma.risk.count({ where: { organizationId, treatment: { is: null } } }),
+      this.prisma.risk.count({ where: { organizationId, nextReviewAt: { lte: to }, status: { not: RiskStatus.ARCHIVED } } }),
+      this.prisma.riskAssessment.findMany({ where: { organizationId }, orderBy: { assessedAt: 'desc' }, select: { riskId: true, severity: true } }),
+      this.prisma.risk.findMany({
+        where: { organizationId, status: { not: RiskStatus.ARCHIVED }, OR: [{ nextReviewAt: { lte: to } }, { assessments: { none: {} } }, { treatment: { is: null } }] },
+        orderBy: { updatedAt: 'desc' }, take: 8,
+        select: { id: true, code: true, title: true, nextReviewAt: true, treatment: { select: { id: true } }, assessments: { orderBy: { assessedAt: 'desc' }, take: 1, select: { severity: true } } },
+      }),
+    ]);
+    const latestByRisk = new Map<string, string>();
+    for (const assessment of assessments) if (!latestByRisk.has(assessment.riskId)) latestByRisk.set(assessment.riskId, assessment.severity);
+    const severityDistribution = { LOW: 0, MEDIUM: 0, HIGH: 0, CRITICAL: 0, UNRATED: 0 };
+    for (const severity of latestByRisk.values()) severityDistribution[severity as keyof typeof severityDistribution] += 1;
+    severityDistribution.UNRATED = total - latestByRisk.size;
+    const criticalHigh = (['HIGH', 'CRITICAL'] as const).reduce((count, severity) => count + severityDistribution[severity], 0);
+    return {
+      total, active, criticalHigh, withoutAssessment, withoutTreatment, dueForReview,
+      severityDistribution,
+      attention: attention.map((risk) => ({ id: risk.id, code: risk.code, title: risk.title, reason: riskAttentionReason({ severity: risk.assessments[0]?.severity ?? null, hasTreatment: Boolean(risk.treatment), nextReviewAt: risk.nextReviewAt }, now) ?? 'Review attention' })),
+    };
   }
 
   async create(access: OrganizationAccess, dto: CreateRiskDto) {

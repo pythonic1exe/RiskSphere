@@ -238,3 +238,13 @@ a {
 .veil-sweep {
   animation: veil-sweep 18s ease-in-out infinite;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  [data-slot="morph-select-trigger"],
+  [data-slot="morph-select-content"],
+  [data-slot="morph-select-item"],
+  [data-slot="morph-select-trigger"] svg,
+  [data-slot="morph-select-item"]::before {
+    transition-duration: 0ms !important;
+  }
+}

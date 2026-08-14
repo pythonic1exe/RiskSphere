@@ -22,6 +22,10 @@ export class RisksController {
   @Get()
   list(@Req() req: AuthenticatedRequest, @Query() dto: ListRisksDto) { return this.risksService.list(this.access(req), dto); }
 
+  @ApiOperation({ summary: 'Get organization-wide risk posture summary' })
+  @Get('summary')
+  summary(@Req() req: AuthenticatedRequest) { return this.risksService.summary(this.access(req)); }
+
   @ApiOperation({ summary: 'Create a risk' }) @ApiBody({ type: CreateRiskDto })
   @Post()
   create(@Req() req: AuthenticatedRequest, @Body() dto: CreateRiskDto) { return this.risksService.create(this.access(req), dto); }

@@ -22,6 +22,9 @@ class FrameworkCatalogItemDto {
   code!: string;
 
   @ApiProperty()
+  version!: string;
+
+  @ApiProperty()
   name!: string;
 
   @ApiProperty({ required: false, nullable: true })

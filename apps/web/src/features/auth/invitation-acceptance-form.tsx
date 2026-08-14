@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react"
 import { useRouter } from "next/navigation"
 import { motion, useReducedMotion } from "motion/react"
-import { ArrowRight, CheckCircle2, LogIn } from "lucide-react"
+import { ArrowRight, LogIn } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { BorderBeam } from "@/components/ui/border-beam"

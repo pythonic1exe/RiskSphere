@@ -90,16 +90,126 @@ enum RiskTreatmentStatus {
   COMPLETED
 }
 
+enum ControlType {
+  PREVENTIVE
+  DETECTIVE
+  CORRECTIVE
+}
+
+enum ControlAutomationType {
+  MANUAL
+  AUTOMATED
+  HYBRID
+}
+
+enum ControlFrequency {
+  CONTINUOUS
+  DAILY
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  SEMI_ANNUAL
+  ANNUAL
+  AD_HOC
+}
+
+enum ControlStatus {
+  DRAFT
+  ACTIVE
+  RETIRED
+  ARCHIVED
+}
+
+enum ControlExecutionStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum OrganizationFrameworkStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum OrganizationRequirementStatus {
+  NOT_ASSESSED
+  IN_PROGRESS
+  COMPLIANT
+  PARTIALLY_COMPLIANT
+  NON_COMPLIANT
+  NOT_APPLICABLE
+}
+
+enum EvidenceType {
+  FILE
+  URL
+  TEXT
+  SYSTEM_RECORD
+}
+
+enum EvidenceStatus {
+  DRAFT
+  ACTIVE
+  EXPIRED
+  ARCHIVED
+}
+
+enum AuditType {
+  INTERNAL
+  EXTERNAL
+  COMPLIANCE
+  OPERATIONAL
+  VENDOR
+}
+
+enum AuditStatus {
+  DRAFT
+  PLANNED
+  IN_PROGRESS
+  UNDER_REVIEW
+  COMPLETED
+  CANCELLED
+}
+
+enum AuditMemberRole {
+  LEAD_AUDITOR
+  AUDITOR
+  REVIEWER
+  OBSERVER
+}
+
+enum AuditScopeType {
+  FRAMEWORK
+  REQUIREMENT
+  CONTROL
+}
+
+enum AuditTestStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  READY_FOR_REVIEW
+  COMPLETED
+  BLOCKED
+}
+
+enum AuditTestResult {
+  PASS
+  FAIL
+  EXCEPTION
+  NOT_APPLICABLE
+}
+
 model User {
-  id                    String     @id @default(uuid()) @db.Uuid
-  email                 String     @unique
-  passwordHash          String
-  status                UserStatus  @default(ACTIVE)
-  createdAt             DateTime    @default(now())
-  updatedAt             DateTime    @updatedAt
-  memberships           Membership[]
-  sessions              Session[]
-  acceptedInvitations   Invitation[] @relation("InvitationAcceptedByUser")
+  id                  String       @id @default(uuid()) @db.Uuid
+  email               String       @unique
+  passwordHash        String
+  status              UserStatus   @default(ACTIVE)
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+  memberships         Membership[]
+  sessions            Session[]
+  acceptedInvitations Invitation[] @relation("InvitationAcceptedByUser")
 
   @@index([status])
 }
@@ -108,7 +218,7 @@ model Session {
   id               String        @id @default(uuid()) @db.Uuid
   userId           String        @db.Uuid
   refreshTokenHash String        @unique
-  status           SessionStatus  @default(ACTIVE)
+  status           SessionStatus @default(ACTIVE)
   expiresAt        DateTime
   revokedAt        DateTime?
   createdAt        DateTime      @default(now())
@@ -120,47 +230,93 @@ model Session {
 }
 
 model Organization {
-  id                    String                       @id @default(uuid()) @db.Uuid
-  slug                  String                       @unique
-  name                  String
-  status                OrganizationStatus           @default(PENDING_ONBOARDING)
-  timezone              String?
-  locale                String?
-  onboardingCompletedAt DateTime?
-  createdAt             DateTime                     @default(now())
-  updatedAt             DateTime                     @updatedAt
-  memberships           Membership[]
-  roles                 Role[]
-  onboarding            OrganizationOnboarding?
-  invitations           Invitation[]
-  frameworkSelections   OrganizationFrameworkSelection[]
-  risks                 Risk[]
-  riskAssessments       RiskAssessment[]
-  riskTreatments        RiskTreatment[]
+  id                       String                           @id @default(uuid()) @db.Uuid
+  slug                     String                           @unique
+  name                     String
+  status                   OrganizationStatus               @default(PENDING_ONBOARDING)
+  timezone                 String?
+  locale                   String?
+  onboardingCompletedAt    DateTime?
+  createdAt                DateTime                         @default(now())
+  updatedAt                DateTime                         @updatedAt
+  memberships              Membership[]
+  roles                    Role[]
+  onboarding               OrganizationOnboarding?
+  invitations              Invitation[]
+  frameworkSelections      OrganizationFrameworkSelection[]
+  organizationFrameworks   OrganizationFramework[]
+  organizationRequirements OrganizationRequirement[]
+  requirementAssessments   RequirementAssessment[]
+  requirementControls      RequirementControl[]
+  risks                    Risk[]
+  riskAssessments          RiskAssessment[]
+  riskTreatments           RiskTreatment[]
+  controls                 Control[]
+  controlExecutions        ControlExecution[]
+  riskControls             RiskControl[]
+  evidence                 Evidence[]
+  evidenceVersions         EvidenceVersion[]
+  controlEvidence          ControlEvidence[]
+  executionEvidence        ExecutionEvidence[]
+  audits                   Audit[]
+  auditMembers             AuditMember[]
+  auditScopes              AuditScope[]
+  auditTests               AuditTest[]
+  auditTestEvidence        AuditTestEvidence[]
+  auditTestObservations    AuditTestObservation[]
 
   @@index([status, updatedAt])
 }
 
 model Membership {
-  id                   String          @id @default(uuid()) @db.Uuid
-  organizationId       String          @db.Uuid
-  userId               String          @db.Uuid
-  status               MembershipStatus @default(ACTIVE)
-  createdAt            DateTime        @default(now())
-  updatedAt            DateTime        @updatedAt
-  organization         Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  user                 User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  membershipRoles      MembershipRole[]
-  sentInvitations      Invitation[]    @relation("InvitationInvitedByMembership")
-  acceptedInvitations   Invitation[]    @relation("InvitationAcceptedMembership")
-  revokedInvitations    Invitation[]    @relation("InvitationRevokedByMembership")
-  selectedFrameworkSelections OrganizationFrameworkSelection[] @relation("FrameworkSelectionSelectedByMembership")
-  ownedRisks            Risk[]          @relation("RiskOwner")
-  createdRisks          Risk[]          @relation("RiskCreatedBy")
-  updatedRisks          Risk[]          @relation("RiskUpdatedBy")
-  riskAssessments       RiskAssessment[]
-  ownedRiskTreatments   RiskTreatment[] @relation("RiskTreatmentOwner")
-  acceptedRiskTreatments RiskTreatment[] @relation("RiskTreatmentAcceptedBy")
+  id                            String                           @id @default(uuid()) @db.Uuid
+  organizationId                String                           @db.Uuid
+  userId                        String                           @db.Uuid
+  status                        MembershipStatus                 @default(ACTIVE)
+  createdAt                     DateTime                         @default(now())
+  updatedAt                     DateTime                         @updatedAt
+  organization                  Organization                     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user                          User                             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  membershipRoles               MembershipRole[]
+  sentInvitations               Invitation[]                     @relation("InvitationInvitedByMembership")
+  acceptedInvitations           Invitation[]                     @relation("InvitationAcceptedMembership")
+  revokedInvitations            Invitation[]                     @relation("InvitationRevokedByMembership")
+  selectedFrameworkSelections   OrganizationFrameworkSelection[] @relation("FrameworkSelectionSelectedByMembership")
+  ownedOrganizationFrameworks   OrganizationFramework[]          @relation("ComplianceFrameworkOwner")
+  adoptedOrganizationFrameworks OrganizationFramework[]          @relation("ComplianceFrameworkAdoptedBy")
+  ownedOrganizationRequirements OrganizationRequirement[]        @relation("ComplianceRequirementOwner")
+  assessedRequirements          RequirementAssessment[]
+  createdRequirementControls    RequirementControl[]
+  ownedRisks                    Risk[]                           @relation("RiskOwner")
+  createdRisks                  Risk[]                           @relation("RiskCreatedBy")
+  updatedRisks                  Risk[]                           @relation("RiskUpdatedBy")
+  riskAssessments               RiskAssessment[]
+  ownedRiskTreatments           RiskTreatment[]                  @relation("RiskTreatmentOwner")
+  acceptedRiskTreatments        RiskTreatment[]                  @relation("RiskTreatmentAcceptedBy")
+  ownedControls                 Control[]                        @relation("ControlOwner")
+  createdControls               Control[]                        @relation("ControlCreatedBy")
+  updatedControls               Control[]                        @relation("ControlUpdatedBy")
+  assignedControlExecutions     ControlExecution[]               @relation("ExecutionAssignee")
+  completedControlExecutions    ControlExecution[]               @relation("ExecutionCompletedBy")
+  createdControlExecutions      ControlExecution[]               @relation("ExecutionCreatedBy")
+  createdRiskControls           RiskControl[]
+  ownedEvidence                 Evidence[]                       @relation("EvidenceOwner")
+  createdEvidence               Evidence[]                       @relation("EvidenceCreatedBy")
+  uploadedEvidenceVersions      EvidenceVersion[]                @relation("EvidenceVersionUploadedBy")
+  linkedControlEvidence         ControlEvidence[]                @relation("ControlEvidenceLinkedBy")
+  linkedExecutionEvidence       ExecutionEvidence[]              @relation("ExecutionEvidenceLinkedBy")
+  createdAudits                 Audit[]                          @relation("AuditCreatedBy")
+  updatedAudits                 Audit[]                          @relation("AuditUpdatedBy")
+  leadAudits                    Audit[]                          @relation("AuditLeadAuditor")
+  auditMemberships              AuditMember[]                    @relation("AuditMemberMembership")
+  addedAuditMembers             AuditMember[]                    @relation("AuditMemberAddedBy")
+  addedAuditScopes              AuditScope[]                     @relation("AuditScopeAddedBy")
+  createdAuditTests             AuditTest[]                      @relation("AuditTestCreatedBy")
+  updatedAuditTests             AuditTest[]                      @relation("AuditTestUpdatedBy")
+  assignedAuditTests            AuditTest[]                      @relation("AuditTestAssignee")
+  linkedAuditTestEvidence       AuditTestEvidence[]              @relation("AuditTestEvidenceLinkedBy")
+  createdAuditTestObservations  AuditTestObservation[]           @relation("AuditTestObservationCreatedBy")
+  updatedAuditTestObservations  AuditTestObservation[]           @relation("AuditTestObservationUpdatedBy")
 
   @@unique([organizationId, userId])
   @@unique([organizationId, id])
@@ -186,13 +342,13 @@ model Role {
 }
 
 model MembershipRole {
-  id             String      @id @default(uuid()) @db.Uuid
-  organizationId String      @db.Uuid
-  membershipId   String      @db.Uuid
-  roleId         String      @db.Uuid
-  createdAt      DateTime    @default(now())
-  membership     Membership  @relation(fields: [organizationId, membershipId], references: [organizationId, id], onDelete: Cascade)
-  role           Role        @relation(fields: [organizationId, roleId], references: [organizationId, id], onDelete: Cascade)
+  id             String     @id @default(uuid()) @db.Uuid
+  organizationId String     @db.Uuid
+  membershipId   String     @db.Uuid
+  roleId         String     @db.Uuid
+  createdAt      DateTime   @default(now())
+  membership     Membership @relation(fields: [organizationId, membershipId], references: [organizationId, id], onDelete: Cascade)
+  role           Role       @relation(fields: [organizationId, roleId], references: [organizationId, id], onDelete: Cascade)
 
   @@unique([membershipId, roleId])
   @@index([organizationId, membershipId])
@@ -200,15 +356,15 @@ model MembershipRole {
 }
 
 model OrganizationOnboarding {
-  id            String                      @id @default(uuid()) @db.Uuid
-  organizationId String                     @unique @db.Uuid
-  status        OrganizationOnboardingStatus @default(IN_PROGRESS)
-  currentStep   OrganizationOnboardingStep?
-  lastStep      OrganizationOnboardingStep?
-  completedAt   DateTime?
-  createdAt     DateTime                    @default(now())
-  updatedAt     DateTime                    @updatedAt
-  organization  Organization                @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  id             String                       @id @default(uuid()) @db.Uuid
+  organizationId String                       @unique @db.Uuid
+  status         OrganizationOnboardingStatus @default(IN_PROGRESS)
+  currentStep    OrganizationOnboardingStep?
+  lastStep       OrganizationOnboardingStep?
+  completedAt    DateTime?
+  createdAt      DateTime                     @default(now())
+  updatedAt      DateTime                     @updatedAt
+  organization   Organization                 @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([status, updatedAt])
 }
@@ -218,7 +374,7 @@ model Invitation {
   organizationId         String           @db.Uuid
   invitedByMembershipId  String           @db.Uuid
   invitedEmail           String
-  invitedEmailNormalized  String
+  invitedEmailNormalized String
   tokenHash              String           @unique
   status                 InvitationStatus @default(PENDING)
   roleId                 String           @db.Uuid
@@ -230,68 +386,187 @@ model Invitation {
   revokedByMembershipId  String?          @db.Uuid
   createdAt              DateTime         @default(now())
   updatedAt              DateTime         @updatedAt
-  organization          Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  invitedByMembership   Membership       @relation("InvitationInvitedByMembership", fields: [organizationId, invitedByMembershipId], references: [organizationId, id], onDelete: Cascade)
-  role                  Role             @relation(fields: [organizationId, roleId], references: [organizationId, id], onDelete: Restrict)
-  acceptedByUser        User?            @relation("InvitationAcceptedByUser", fields: [acceptedByUserId], references: [id], onDelete: SetNull)
-  acceptedMembership    Membership?      @relation("InvitationAcceptedMembership", fields: [organizationId, acceptedMembershipId], references: [organizationId, id], onDelete: Restrict)
-  revokedByMembership   Membership?      @relation("InvitationRevokedByMembership", fields: [organizationId, revokedByMembershipId], references: [organizationId, id], onDelete: Restrict)
+  organization           Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  invitedByMembership    Membership       @relation("InvitationInvitedByMembership", fields: [organizationId, invitedByMembershipId], references: [organizationId, id], onDelete: Cascade)
+  role                   Role             @relation(fields: [organizationId, roleId], references: [organizationId, id], onDelete: Restrict)
+  acceptedByUser         User?            @relation("InvitationAcceptedByUser", fields: [acceptedByUserId], references: [id], onDelete: SetNull)
+  acceptedMembership     Membership?      @relation("InvitationAcceptedMembership", fields: [organizationId, acceptedMembershipId], references: [organizationId, id], onDelete: Restrict)
+  revokedByMembership    Membership?      @relation("InvitationRevokedByMembership", fields: [organizationId, revokedByMembershipId], references: [organizationId, id], onDelete: Restrict)
 
   @@index([organizationId, invitedEmailNormalized, status])
   @@index([organizationId, status])
 }
 
 model FrameworkCatalog {
-  id          String                 @id @default(uuid()) @db.Uuid
-  code        String                 @unique
-  name        String
-  description String?
-  status      FrameworkCatalogStatus @default(ACTIVE)
-  createdAt   DateTime               @default(now())
-  updatedAt   DateTime               @updatedAt
-  selections  OrganizationFrameworkSelection[]
+  id                     String                           @id @default(uuid()) @db.Uuid
+  code                   String
+  version                String                           @default("legacy")
+  name                   String
+  description            String?
+  status                 FrameworkCatalogStatus           @default(ACTIVE)
+  createdAt              DateTime                         @default(now())
+  updatedAt              DateTime                         @updatedAt
+  selections             OrganizationFrameworkSelection[]
+  requirements           FrameworkRequirement[]
+  organizationFrameworks OrganizationFramework[]
 
-  @@index([status])
+  @@unique([code, version])
+  @@index([status, code], map: "FrameworkCatalog_status_code_idx")
+}
+
+model FrameworkRequirement {
+  id                       String                    @id @default(uuid()) @db.Uuid
+  frameworkCatalogId       String                    @db.Uuid
+  code                     String
+  title                    String
+  description              String?
+  domain                   String?
+  parentRequirementId      String?                   @db.Uuid
+  sortOrder                Int                       @default(0)
+  createdAt                DateTime                  @default(now())
+  updatedAt                DateTime                  @updatedAt
+  frameworkCatalog         FrameworkCatalog          @relation(fields: [frameworkCatalogId], references: [id], onDelete: Cascade)
+  parentRequirement        FrameworkRequirement?     @relation("FrameworkRequirementHierarchy", fields: [frameworkCatalogId, parentRequirementId], references: [frameworkCatalogId, id], onDelete: Restrict, map: "FrameworkRequirement_frameworkCatalogId_parentRequirementId_fke")
+  childRequirements        FrameworkRequirement[]    @relation("FrameworkRequirementHierarchy")
+  organizationRequirements OrganizationRequirement[]
+
+  @@unique([frameworkCatalogId, id], map: "FrameworkRequirement_frameworkCatalogId_id_key")
+  @@unique([frameworkCatalogId, code], map: "FrameworkRequirement_frameworkCatalogId_code_key")
+  @@index([frameworkCatalogId, sortOrder], map: "FrameworkRequirement_frameworkCatalogId_sortOrder_idx")
+  @@index([frameworkCatalogId, parentRequirementId], map: "FrameworkRequirement_frameworkCatalogId_parentRequirementId_idx")
+  @@index([frameworkCatalogId, domain], map: "FrameworkRequirement_frameworkCatalogId_domain_idx")
 }
 
 model OrganizationFrameworkSelection {
-  id                    String       @id @default(uuid()) @db.Uuid
-  organizationId        String       @db.Uuid
-  frameworkCatalogId    String       @db.Uuid
-  selectedByMembershipId String?      @db.Uuid
-  selectedAt            DateTime     @default(now())
-  createdAt             DateTime     @default(now())
-  updatedAt             DateTime     @updatedAt
-  organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  frameworkCatalog     FrameworkCatalog @relation(fields: [frameworkCatalogId], references: [id], onDelete: Restrict)
-  selectedByMembership Membership?  @relation("FrameworkSelectionSelectedByMembership", fields: [organizationId, selectedByMembershipId], references: [organizationId, id], onDelete: Restrict)
+  id                     String           @id @default(uuid()) @db.Uuid
+  organizationId         String           @db.Uuid
+  frameworkCatalogId     String           @db.Uuid
+  selectedByMembershipId String?          @db.Uuid
+  selectedAt             DateTime         @default(now())
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
+  organization           Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  frameworkCatalog       FrameworkCatalog @relation(fields: [frameworkCatalogId], references: [id], onDelete: Restrict)
+  selectedByMembership   Membership?      @relation("FrameworkSelectionSelectedByMembership", fields: [organizationId, selectedByMembershipId], references: [organizationId, id], onDelete: Restrict)
 
   @@unique([organizationId, frameworkCatalogId])
   @@index([organizationId])
 }
 
+model OrganizationFramework {
+  id                    String                      @id @default(uuid()) @db.Uuid
+  organizationId        String                      @db.Uuid
+  frameworkCatalogId    String                      @db.Uuid
+  status                OrganizationFrameworkStatus @default(ACTIVE)
+  ownerMembershipId     String?                     @db.Uuid
+  adoptedByMembershipId String                      @db.Uuid
+  adoptedAt             DateTime                    @default(now())
+  targetDate            DateTime?
+  archivedAt            DateTime?
+  createdAt             DateTime                    @default(now())
+  updatedAt             DateTime                    @updatedAt
+  organization          Organization                @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  frameworkCatalog      FrameworkCatalog            @relation(fields: [frameworkCatalogId], references: [id], onDelete: Restrict)
+  ownerMembership       Membership?                 @relation("ComplianceFrameworkOwner", fields: [organizationId, ownerMembershipId], references: [organizationId, id], onDelete: Restrict)
+  adoptedByMembership   Membership                  @relation("ComplianceFrameworkAdoptedBy", fields: [organizationId, adoptedByMembershipId], references: [organizationId, id], onDelete: Restrict)
+  requirements          OrganizationRequirement[]
+  auditScopes           AuditScope[]
+
+  @@unique([organizationId, id], map: "OrganizationFramework_organizationId_id_key")
+  @@unique([organizationId, frameworkCatalogId], map: "OrganizationFramework_organizationId_frameworkCatalogId_key")
+  @@index([organizationId, status, updatedAt], map: "OrganizationFramework_organizationId_status_updatedAt_idx")
+  @@index([organizationId, ownerMembershipId], map: "OrganizationFramework_organizationId_ownerMembershipId_idx")
+}
+
+model OrganizationRequirement {
+  id                      String                        @id @default(uuid()) @db.Uuid
+  organizationId          String                        @db.Uuid
+  organizationFrameworkId String                        @db.Uuid
+  frameworkRequirementId  String                        @db.Uuid
+  status                  OrganizationRequirementStatus @default(NOT_ASSESSED)
+  ownerMembershipId       String?                       @db.Uuid
+  notes                   String?
+  targetDate              DateTime?
+  applicabilityReason     String?
+  lastAssessedAt          DateTime?
+  nextReviewAt            DateTime?
+  createdAt               DateTime                      @default(now())
+  updatedAt               DateTime                      @updatedAt
+  organization            Organization                  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationFramework   OrganizationFramework         @relation(fields: [organizationId, organizationFrameworkId], references: [organizationId, id], onDelete: Cascade, map: "OrganizationRequirement_organizationId_organizationFrameworkId_")
+  frameworkRequirement    FrameworkRequirement          @relation(fields: [frameworkRequirementId], references: [id], onDelete: Restrict)
+  ownerMembership         Membership?                   @relation("ComplianceRequirementOwner", fields: [organizationId, ownerMembershipId], references: [organizationId, id], onDelete: Restrict)
+  assessments             RequirementAssessment[]
+  controlLinks            RequirementControl[]
+  auditScopes             AuditScope[]
+  auditTests              AuditTest[]
+
+  @@unique([organizationId, id], map: "OrganizationRequirement_organizationId_id_key")
+  @@unique([organizationId, organizationFrameworkId, frameworkRequirementId], map: "OrganizationRequirement_org_framework_req_key")
+  @@index([organizationId, status, updatedAt], map: "OrganizationRequirement_organizationId_status_updatedAt_idx")
+  @@index([organizationId, ownerMembershipId], map: "OrganizationRequirement_organizationId_ownerMembershipId_idx")
+  @@index([organizationId, organizationFrameworkId], map: "OrganizationRequirement_org_framework_idx")
+  @@index([organizationId, frameworkRequirementId], map: "OrganizationRequirement_organizationId_frameworkRequirementId_i")
+}
+
+model RequirementAssessment {
+  id                        String                        @id @default(uuid()) @db.Uuid
+  organizationId            String                        @db.Uuid
+  organizationRequirementId String                        @db.Uuid
+  status                    OrganizationRequirementStatus
+  rationale                 String
+  assessedByMembershipId    String                        @db.Uuid
+  assessedAt                DateTime                      @default(now())
+  createdAt                 DateTime                      @default(now())
+  organization              Organization                  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationRequirement   OrganizationRequirement       @relation(fields: [organizationId, organizationRequirementId], references: [organizationId, id], onDelete: Cascade, map: "RequirementAssessment_organizationId_organizationRequirementId_")
+  assessedByMembership      Membership                    @relation(fields: [organizationId, assessedByMembershipId], references: [organizationId, id], onDelete: Restrict, map: "RequirementAssessment_organizationId_assessedByMembershipId_fke")
+
+  @@index([organizationId, organizationRequirementId, assessedAt], map: "ReqAssessment_org_req_assessed_idx")
+  @@index([organizationId, assessedByMembershipId], map: "RequirementAssessment_organizationId_assessedByMembershipId_idx")
+}
+
+model RequirementControl {
+  id                        String                  @id @default(uuid()) @db.Uuid
+  organizationId            String                  @db.Uuid
+  organizationRequirementId String                  @db.Uuid
+  controlId                 String                  @db.Uuid
+  createdByMembershipId     String                  @db.Uuid
+  createdAt                 DateTime                @default(now())
+  organization              Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationRequirement   OrganizationRequirement @relation(fields: [organizationId, organizationRequirementId], references: [organizationId, id], onDelete: Cascade, map: "RequirementControl_organizationId_organizationRequirementId_fke")
+  control                   Control                 @relation(fields: [organizationId, controlId], references: [organizationId, id], onDelete: Cascade)
+  createdByMembership       Membership              @relation(fields: [organizationId, createdByMembershipId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, organizationRequirementId, controlId], map: "RequirementControl_organizationId_organizationRequirementId_con")
+  @@unique([organizationId, id], map: "RequirementControl_organizationId_id_key")
+  @@index([organizationId, organizationRequirementId], map: "RequirementControl_organizationId_organizationRequirementId_idx")
+  @@index([organizationId, controlId], map: "RequirementControl_organizationId_controlId_idx")
+}
+
 model Risk {
-  id                    String       @id @default(uuid()) @db.Uuid
-  organizationId        String       @db.Uuid
+  id                    String           @id @default(uuid()) @db.Uuid
+  organizationId        String           @db.Uuid
   code                  String
   title                 String
   description           String?
   category              String?
-  status                RiskStatus   @default(DRAFT)
-  ownerMembershipId     String?      @db.Uuid
+  status                RiskStatus       @default(DRAFT)
+  ownerMembershipId     String?          @db.Uuid
   nextReviewAt          DateTime?
   lastReviewedAt        DateTime?
-  createdByMembershipId String       @db.Uuid
-  updatedByMembershipId String       @db.Uuid
-  createdAt             DateTime     @default(now())
-  updatedAt             DateTime     @updatedAt
+  createdByMembershipId String           @db.Uuid
+  updatedByMembershipId String           @db.Uuid
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
   archivedAt            DateTime?
-  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  ownerMembership       Membership?  @relation("RiskOwner", fields: [organizationId, ownerMembershipId], references: [organizationId, id], onDelete: Restrict)
-  createdByMembership   Membership   @relation("RiskCreatedBy", fields: [organizationId, createdByMembershipId], references: [organizationId, id], onDelete: Restrict)
-  updatedByMembership   Membership   @relation("RiskUpdatedBy", fields: [organizationId, updatedByMembershipId], references: [organizationId, id], onDelete: Restrict)
+  organization          Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  ownerMembership       Membership?      @relation("RiskOwner", fields: [organizationId, ownerMembershipId], references: [organizationId, id], onDelete: Restrict)
+  createdByMembership   Membership       @relation("RiskCreatedBy", fields: [organizationId, createdByMembershipId], references: [organizationId, id], onDelete: Restrict)
+  updatedByMembership   Membership       @relation("RiskUpdatedBy", fields: [organizationId, updatedByMembershipId], references: [organizationId, id], onDelete: Restrict)
   assessments           RiskAssessment[]
   treatment             RiskTreatment?
+  riskControls          RiskControl[]
 
   @@unique([organizationId, code])
   @@unique([organizationId, id])
@@ -300,44 +575,376 @@ model Risk {
   @@index([organizationId, category])
 }
 
+model Control {
+  id                    String                @id @default(uuid()) @db.Uuid
+  organizationId        String                @db.Uuid
+  code                  String
+  title                 String
+  description           String?
+  category              String?
+  type                  ControlType
+  automationType        ControlAutomationType
+  frequency             ControlFrequency
+  status                ControlStatus         @default(DRAFT)
+  ownerMembershipId     String?               @db.Uuid
+  createdByMembershipId String                @db.Uuid
+  updatedByMembershipId String                @db.Uuid
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  archivedAt            DateTime?
+  organization          Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  ownerMembership       Membership?           @relation("ControlOwner", fields: [organizationId, ownerMembershipId], references: [organizationId, id], onDelete: Restrict)
+  createdByMembership   Membership            @relation("ControlCreatedBy", fields: [organizationId, createdByMembershipId], references: [organizationId, id], onDelete: Restrict)
+  updatedByMembership   Membership            @relation("ControlUpdatedBy", fields: [organizationId, updatedByMembershipId], references: [organizationId, id], onDelete: Restrict)
+  executions            ControlExecution[]
+  riskControls          RiskControl[]
+  requirementControls   RequirementControl[]
+  evidenceLinks         ControlEvidence[]
+  auditScopes           AuditScope[]
+  auditTests            AuditTest[]
+
+  @@unique([organizationId, code])
+  @@unique([organizationId, id])
+  @@index([organizationId, status, updatedAt])
+  @@index([organizationId, ownerMembershipId])
+  @@index([organizationId, category])
+}
+
+model ControlExecution {
+  id                      String                 @id @default(uuid()) @db.Uuid
+  organizationId          String                 @db.Uuid
+  controlId               String                 @db.Uuid
+  periodLabel             String
+  periodStart             DateTime
+  periodEnd               DateTime
+  dueAt                   DateTime
+  status                  ControlExecutionStatus @default(SCHEDULED)
+  assignedToMembershipId  String?                @db.Uuid
+  startedAt               DateTime?
+  completedAt             DateTime?
+  completedByMembershipId String?                @db.Uuid
+  completionNotes         String?
+  createdByMembershipId   String                 @db.Uuid
+  createdAt               DateTime               @default(now())
+  updatedAt               DateTime               @updatedAt
+  organization            Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  control                 Control                @relation(fields: [organizationId, controlId], references: [organizationId, id], onDelete: Cascade)
+  assignedToMembership    Membership?            @relation("ExecutionAssignee", fields: [organizationId, assignedToMembershipId], references: [organizationId, id], onDelete: Restrict)
+  completedByMembership   Membership?            @relation("ExecutionCompletedBy", fields: [organizationId, completedByMembershipId], references: [organizationId, id], onDelete: Restrict)
+  createdByMembership     Membership             @relation("ExecutionCreatedBy", fields: [organizationId, createdByMembershipId], references: [organizationId, id], onDelete: Restrict)
+  evidenceLinks           ExecutionEvidence[]
+
+  @@unique([organizationId, id])
+  @@index([organizationId, controlId, dueAt])
+  @@index([organizationId, status, dueAt])
+}
+
+model Evidence {
+  id                    String              @id @default(uuid()) @db.Uuid
+  organizationId        String              @db.Uuid
+  title                 String
+  description           String?
+  type                  EvidenceType
+  status                EvidenceStatus      @default(DRAFT)
+  ownerMembershipId     String?             @db.Uuid
+  createdByMembershipId String              @db.Uuid
+  effectiveFrom         DateTime?
+  effectiveTo           DateTime?
+  expiresAt             DateTime?
+  archivedAt            DateTime?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  organization          Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  ownerMembership       Membership?         @relation("EvidenceOwner", fields: [organizationId, ownerMembershipId], references: [organizationId, id], onDelete: Restrict)
+  createdByMembership   Membership          @relation("EvidenceCreatedBy", fields: [organizationId, createdByMembershipId], references: [organizationId, id], onDelete: Restrict)
+  versions              EvidenceVersion[]
+  controlLinks          ControlEvidence[]
+  executionLinks        ExecutionEvidence[]
+  auditTestEvidence     AuditTestEvidence[]
+
+  @@unique([organizationId, id])
+  @@index([organizationId, status, updatedAt])
+  @@index([organizationId, type, updatedAt])
+  @@index([organizationId, ownerMembershipId])
+  @@index([organizationId, createdByMembershipId])
+  @@index([organizationId, expiresAt])
+}
+
+model EvidenceVersion {
+  id                     String              @id @default(uuid()) @db.Uuid
+  organizationId         String              @db.Uuid
+  evidenceId             String              @db.Uuid
+  versionNumber          Int
+  fileName               String?
+  storageKey             String?
+  mimeType               String?
+  fileSize               Int?
+  checksum               String?
+  externalUrl            String?
+  textContent            String?
+  uploadedByMembershipId String              @db.Uuid
+  createdAt              DateTime            @default(now())
+  organization           Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  evidence               Evidence            @relation(fields: [organizationId, evidenceId], references: [organizationId, id], onDelete: Cascade)
+  uploadedByMembership   Membership          @relation("EvidenceVersionUploadedBy", fields: [organizationId, uploadedByMembershipId], references: [organizationId, id], onDelete: Restrict)
+  auditTestEvidence      AuditTestEvidence[]
+
+  @@unique([organizationId, evidenceId, versionNumber])
+  @@unique([organizationId, id])
+  @@index([organizationId, evidenceId, createdAt])
+}
+
+model ControlEvidence {
+  id                   String       @id @default(uuid()) @db.Uuid
+  organizationId       String       @db.Uuid
+  evidenceId           String       @db.Uuid
+  controlId            String       @db.Uuid
+  linkedByMembershipId String       @db.Uuid
+  linkedAt             DateTime     @default(now())
+  organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  evidence             Evidence     @relation(fields: [organizationId, evidenceId], references: [organizationId, id], onDelete: Cascade)
+  control              Control      @relation(fields: [organizationId, controlId], references: [organizationId, id], onDelete: Cascade)
+  linkedByMembership   Membership   @relation("ControlEvidenceLinkedBy", fields: [organizationId, linkedByMembershipId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, evidenceId, controlId])
+  @@unique([organizationId, id])
+  @@index([organizationId, evidenceId])
+  @@index([organizationId, controlId])
+}
+
+model ExecutionEvidence {
+  id                   String           @id @default(uuid()) @db.Uuid
+  organizationId       String           @db.Uuid
+  evidenceId           String           @db.Uuid
+  controlExecutionId   String           @db.Uuid
+  linkedByMembershipId String           @db.Uuid
+  linkedAt             DateTime         @default(now())
+  organization         Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  evidence             Evidence         @relation(fields: [organizationId, evidenceId], references: [organizationId, id], onDelete: Cascade)
+  controlExecution     ControlExecution @relation(fields: [organizationId, controlExecutionId], references: [organizationId, id], onDelete: Cascade)
+  linkedByMembership   Membership       @relation("ExecutionEvidenceLinkedBy", fields: [organizationId, linkedByMembershipId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, evidenceId, controlExecutionId])
+  @@unique([organizationId, id])
+  @@index([organizationId, evidenceId])
+  @@index([organizationId, controlExecutionId])
+}
+
+model Audit {
+  id                      String        @id @default(uuid()) @db.Uuid
+  organizationId          String        @db.Uuid
+  code                    String
+  title                   String
+  description             String?
+  type                    AuditType
+  status                  AuditStatus   @default(DRAFT)
+  leadAuditorMembershipId String?       @db.Uuid
+  createdByMembershipId   String        @db.Uuid
+  updatedByMembershipId   String        @db.Uuid
+  plannedStartAt          DateTime?
+  plannedEndAt            DateTime?
+  startedAt               DateTime?
+  completedAt             DateTime?
+  cancelledAt             DateTime?
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
+  organization            Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  leadAuditorMembership   Membership?   @relation("AuditLeadAuditor", fields: [organizationId, leadAuditorMembershipId], references: [organizationId, id], onDelete: Restrict)
+  createdByMembership     Membership    @relation("AuditCreatedBy", fields: [organizationId, createdByMembershipId], references: [organizationId, id], onDelete: Restrict)
+  updatedByMembership     Membership    @relation("AuditUpdatedBy", fields: [organizationId, updatedByMembershipId], references: [organizationId, id], onDelete: Restrict)
+  members                 AuditMember[]
+  scopes                  AuditScope[]
+  tests                   AuditTest[]
+
+  @@unique([organizationId, code])
+  @@unique([organizationId, id])
+  @@index([organizationId, status, updatedAt])
+  @@index([organizationId, type, updatedAt])
+  @@index([organizationId, leadAuditorMembershipId])
+  @@index([organizationId, plannedStartAt, plannedEndAt])
+}
+
+model AuditMember {
+  id                  String          @id @default(uuid()) @db.Uuid
+  organizationId      String          @db.Uuid
+  auditId             String          @db.Uuid
+  membershipId        String          @db.Uuid
+  role                AuditMemberRole
+  addedByMembershipId String          @db.Uuid
+  addedAt             DateTime        @default(now())
+  organization        Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  audit               Audit           @relation(fields: [organizationId, auditId], references: [organizationId, id], onDelete: Cascade)
+  membership          Membership      @relation("AuditMemberMembership", fields: [organizationId, membershipId], references: [organizationId, id], onDelete: Restrict)
+  addedByMembership   Membership      @relation("AuditMemberAddedBy", fields: [organizationId, addedByMembershipId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, auditId, membershipId])
+  @@unique([organizationId, id])
+  @@index([organizationId, auditId, role])
+  @@index([organizationId, membershipId])
+}
+
+model AuditScope {
+  id                        String                   @id @default(uuid()) @db.Uuid
+  organizationId            String                   @db.Uuid
+  auditId                   String                   @db.Uuid
+  type                      AuditScopeType
+  organizationFrameworkId   String?                  @db.Uuid
+  organizationRequirementId String?                  @db.Uuid
+  controlId                 String?                  @db.Uuid
+  addedByMembershipId       String                   @db.Uuid
+  createdAt                 DateTime                 @default(now())
+  organization              Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  audit                     Audit                    @relation(fields: [organizationId, auditId], references: [organizationId, id], onDelete: Cascade)
+  organizationFramework     OrganizationFramework?   @relation(fields: [organizationId, organizationFrameworkId], references: [organizationId, id], onDelete: Cascade)
+  organizationRequirement   OrganizationRequirement? @relation(fields: [organizationId, organizationRequirementId], references: [organizationId, id], onDelete: Cascade)
+  control                   Control?                 @relation(fields: [organizationId, controlId], references: [organizationId, id], onDelete: Cascade)
+  addedByMembership         Membership               @relation("AuditScopeAddedBy", fields: [organizationId, addedByMembershipId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@unique([organizationId, auditId, organizationFrameworkId])
+  @@unique([organizationId, auditId, organizationRequirementId])
+  @@unique([organizationId, auditId, controlId])
+  @@index([organizationId, auditId, type])
+  @@index([organizationId, organizationFrameworkId])
+  @@index([organizationId, organizationRequirementId])
+  @@index([organizationId, controlId])
+}
+
+model AuditTest {
+  id                        String                   @id @default(uuid()) @db.Uuid
+  organizationId            String                   @db.Uuid
+  auditId                   String                   @db.Uuid
+  code                      String
+  title                     String
+  description               String?
+  controlId                 String?                  @db.Uuid
+  organizationRequirementId String?                  @db.Uuid
+  procedure                 String
+  expectedResult            String
+  status                    AuditTestStatus          @default(NOT_STARTED)
+  result                    AuditTestResult?
+  assignedToMembershipId    String?                  @db.Uuid
+  startedAt                 DateTime?
+  completedAt               DateTime?
+  notes                     String?
+  createdByMembershipId     String                   @db.Uuid
+  updatedByMembershipId     String                   @db.Uuid
+  createdAt                 DateTime                 @default(now())
+  updatedAt                 DateTime                 @updatedAt
+  organization              Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  audit                     Audit                    @relation(fields: [organizationId, auditId], references: [organizationId, id], onDelete: Cascade)
+  control                   Control?                 @relation(fields: [organizationId, controlId], references: [organizationId, id], onDelete: Restrict)
+  organizationRequirement   OrganizationRequirement? @relation(fields: [organizationId, organizationRequirementId], references: [organizationId, id], onDelete: Restrict)
+  assignedToMembership      Membership?              @relation("AuditTestAssignee", fields: [organizationId, assignedToMembershipId], references: [organizationId, id], onDelete: Restrict)
+  createdByMembership       Membership               @relation("AuditTestCreatedBy", fields: [organizationId, createdByMembershipId], references: [organizationId, id], onDelete: Restrict)
+  updatedByMembership       Membership               @relation("AuditTestUpdatedBy", fields: [organizationId, updatedByMembershipId], references: [organizationId, id], onDelete: Restrict)
+  evidenceLinks             AuditTestEvidence[]
+  observations              AuditTestObservation[]
+
+  @@unique([organizationId, auditId, code])
+  @@unique([organizationId, id])
+  @@index([organizationId, auditId, status, updatedAt])
+  @@index([organizationId, result])
+  @@index([organizationId, assignedToMembershipId])
+  @@index([organizationId, controlId])
+  @@index([organizationId, organizationRequirementId])
+}
+
+model AuditTestEvidence {
+  id                   String          @id @default(uuid()) @db.Uuid
+  organizationId       String          @db.Uuid
+  auditTestId          String          @db.Uuid
+  evidenceId           String          @db.Uuid
+  evidenceVersionId    String          @db.Uuid
+  linkedByMembershipId String          @db.Uuid
+  linkedAt             DateTime        @default(now())
+  organization         Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  auditTest            AuditTest       @relation(fields: [organizationId, auditTestId], references: [organizationId, id], onDelete: Cascade)
+  evidence             Evidence        @relation(fields: [organizationId, evidenceId], references: [organizationId, id], onDelete: Cascade)
+  evidenceVersion      EvidenceVersion @relation(fields: [organizationId, evidenceVersionId], references: [organizationId, id], onDelete: Restrict)
+  linkedByMembership   Membership      @relation("AuditTestEvidenceLinkedBy", fields: [organizationId, linkedByMembershipId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@unique([organizationId, auditTestId, evidenceVersionId])
+  @@index([organizationId, auditTestId, linkedAt])
+  @@index([organizationId, evidenceId])
+  @@index([organizationId, evidenceVersionId])
+}
+
+model AuditTestObservation {
+  id                    String       @id @default(uuid()) @db.Uuid
+  organizationId        String       @db.Uuid
+  auditTestId           String       @db.Uuid
+  content               String
+  createdByMembershipId String       @db.Uuid
+  updatedByMembershipId String       @db.Uuid
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  auditTest             AuditTest    @relation(fields: [organizationId, auditTestId], references: [organizationId, id], onDelete: Cascade)
+  createdByMembership   Membership   @relation("AuditTestObservationCreatedBy", fields: [organizationId, createdByMembershipId], references: [organizationId, id], onDelete: Restrict)
+  updatedByMembership   Membership   @relation("AuditTestObservationUpdatedBy", fields: [organizationId, updatedByMembershipId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@index([organizationId, auditTestId, createdAt])
+}
+
+model RiskControl {
+  id                    String       @id @default(uuid()) @db.Uuid
+  organizationId        String       @db.Uuid
+  riskId                String       @db.Uuid
+  controlId             String       @db.Uuid
+  createdByMembershipId String       @db.Uuid
+  createdAt             DateTime     @default(now())
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  risk                  Risk         @relation(fields: [organizationId, riskId], references: [organizationId, id], onDelete: Cascade)
+  control               Control      @relation(fields: [organizationId, controlId], references: [organizationId, id], onDelete: Cascade)
+  createdByMembership   Membership   @relation(fields: [organizationId, createdByMembershipId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, riskId, controlId])
+  @@unique([organizationId, id])
+  @@index([organizationId, riskId])
+  @@index([organizationId, controlId])
+}
+
 model RiskAssessment {
-  id                    String             @id @default(uuid()) @db.Uuid
-  organizationId        String             @db.Uuid
-  riskId                String             @db.Uuid
-  type                  RiskAssessmentType
-  likelihood            Int
-  impact                Int
-  score                 Int
-  severity              RiskSeverity
-  rationale             String?
-  assessedByMembershipId String            @db.Uuid
-  assessedAt            DateTime           @default(now())
-  createdAt             DateTime           @default(now())
-  organization          Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  risk                  Risk               @relation(fields: [organizationId, riskId], references: [organizationId, id], onDelete: Cascade)
-  assessedByMembership  Membership         @relation(fields: [organizationId, assessedByMembershipId], references: [organizationId, id], onDelete: Restrict)
+  id                     String             @id @default(uuid()) @db.Uuid
+  organizationId         String             @db.Uuid
+  riskId                 String             @db.Uuid
+  type                   RiskAssessmentType
+  likelihood             Int
+  impact                 Int
+  score                  Int
+  severity               RiskSeverity
+  rationale              String?
+  assessedByMembershipId String             @db.Uuid
+  assessedAt             DateTime           @default(now())
+  createdAt              DateTime           @default(now())
+  organization           Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  risk                   Risk               @relation(fields: [organizationId, riskId], references: [organizationId, id], onDelete: Cascade)
+  assessedByMembership   Membership         @relation(fields: [organizationId, assessedByMembershipId], references: [organizationId, id], onDelete: Restrict)
 
   @@index([organizationId, riskId, type, assessedAt])
   @@index([organizationId, assessedByMembershipId])
 }
 
 model RiskTreatment {
-  id                    String                @id @default(uuid()) @db.Uuid
-  organizationId        String                @db.Uuid
-  riskId                String                @db.Uuid
-  strategy              RiskTreatmentStrategy
-  status                RiskTreatmentStatus   @default(NOT_STARTED)
-  plan                  String?
-  targetDate            DateTime?
-  ownerMembershipId     String?               @db.Uuid
-  acceptedByMembershipId String?              @db.Uuid
-  acceptedAt            DateTime?
-  createdAt             DateTime              @default(now())
-  updatedAt             DateTime              @updatedAt
-  organization          Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  risk                  Risk                  @relation(fields: [organizationId, riskId], references: [organizationId, id], onDelete: Cascade)
-  ownerMembership       Membership?           @relation("RiskTreatmentOwner", fields: [organizationId, ownerMembershipId], references: [organizationId, id], onDelete: Restrict)
-  acceptedByMembership  Membership?           @relation("RiskTreatmentAcceptedBy", fields: [organizationId, acceptedByMembershipId], references: [organizationId, id], onDelete: Restrict)
+  id                     String                @id @default(uuid()) @db.Uuid
+  organizationId         String                @db.Uuid
+  riskId                 String                @db.Uuid
+  strategy               RiskTreatmentStrategy
+  status                 RiskTreatmentStatus   @default(NOT_STARTED)
+  plan                   String?
+  targetDate             DateTime?
+  ownerMembershipId      String?               @db.Uuid
+  acceptedByMembershipId String?               @db.Uuid
+  acceptedAt             DateTime?
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
+  organization           Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  risk                   Risk                  @relation(fields: [organizationId, riskId], references: [organizationId, id], onDelete: Cascade)
+  ownerMembership        Membership?           @relation("RiskTreatmentOwner", fields: [organizationId, ownerMembershipId], references: [organizationId, id], onDelete: Restrict)
+  acceptedByMembership   Membership?           @relation("RiskTreatmentAcceptedBy", fields: [organizationId, acceptedByMembershipId], references: [organizationId, id], onDelete: Restrict)
 
   @@unique([organizationId, riskId])
   @@index([organizationId, status, targetDate])

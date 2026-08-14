@@ -191,9 +191,7 @@ export class OrganizationsService {
   }
 
   async updateOrganization(access: OrganizationAccess, dto: UpdateOrganizationDto) {
-    if (
-      !this.authorizationService.canManageOrganization(access.roleCodes)
-    ) {
+    if (!this.authorizationService.canManageOrganization(access.roleCodes)) {
       throw new ForbiddenException('Not allowed to manage this organization');
     }
 
@@ -236,9 +234,7 @@ export class OrganizationsService {
   }
 
   async updateOnboardingProgress(access: OrganizationAccess, dto: UpdateOnboardingProgressDto) {
-    if (
-      !this.authorizationService.canManageOnboarding(access.roleCodes)
-    ) {
+    if (!this.authorizationService.canManageOnboarding(access.roleCodes)) {
       throw new ForbiddenException('Not allowed to manage onboarding');
     }
 
@@ -324,6 +320,26 @@ export class OrganizationsService {
 
   async getOrganizationAccess(userId: string, organizationId: string) {
     return this.authorizationService.getAccess(userId, organizationId);
+  }
+
+  async listActiveMembers(access: { organization: { id: string } }) {
+    const memberships = await this.prisma.membership.findMany({
+      where: { organizationId: access.organization.id, status: 'ACTIVE' },
+      orderBy: { createdAt: 'asc' },
+      include: {
+        user: { select: { id: true, email: true } },
+        membershipRoles: { include: { role: true } },
+      },
+    });
+    return {
+      data: memberships.map((membership) => ({
+        id: membership.id,
+        userId: membership.user.id,
+        name: membership.user.email,
+        email: membership.user.email,
+        roles: membership.membershipRoles.map(({ role }) => role),
+      })),
+    };
   }
 
   async getMyOrganizations(userId: string) {

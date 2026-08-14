@@ -8,26 +8,31 @@ import { OrganizationAuthorizationService } from '../../common/authorization';
 const DEFAULT_FRAMEWORKS = [
   {
     code: 'SOC_2',
+    version: '2017',
     name: 'SOC 2',
     description: 'Trust Services Criteria',
   },
   {
     code: 'ISO_27001',
+    version: '2022',
     name: 'ISO 27001',
     description: 'Information security management',
   },
   {
     code: 'NIST_CSF',
+    version: '2.0',
     name: 'NIST CSF',
     description: 'Cybersecurity framework',
   },
   {
     code: 'HIPAA',
+    version: '2013',
     name: 'HIPAA',
     description: 'Healthcare privacy and security',
   },
   {
     code: 'PCI_DSS',
+    version: '4.0',
     name: 'PCI DSS',
     description: 'Payment card industry security standard',
   },
@@ -49,6 +54,7 @@ export class FrameworksService implements OnModuleInit {
     await this.prisma.frameworkCatalog.createMany({
       data: DEFAULT_FRAMEWORKS.map((framework) => ({
         code: framework.code,
+        version: framework.version,
         name: framework.name,
         description: framework.description,
         status: FrameworkCatalogStatus.ACTIVE,
