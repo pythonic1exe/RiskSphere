@@ -200,6 +200,60 @@ enum AuditTestResult {
   NOT_APPLICABLE
 }
 
+enum FindingSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum FindingStatus {
+  OPEN
+  IN_REMEDIATION
+  READY_FOR_VALIDATION
+  CLOSED
+}
+
+enum FindingSourceType {
+  AUDIT_OBSERVATION
+  MANUAL
+}
+
+enum FindingEvidencePurpose {
+  REMEDIATION
+  VALIDATION
+}
+
+enum FindingValidationDecision {
+  ACCEPTED
+  REJECTED
+}
+
+enum FindingResolutionType {
+  REMEDIATED
+  RISK_ACCEPTED
+  FALSE_POSITIVE
+  DUPLICATE
+  OTHER
+}
+
+enum FindingActivityType {
+  CREATED
+  PROMOTED_FROM_OBSERVATION
+  UPDATED
+  OWNER_CHANGED
+  SEVERITY_CHANGED
+  REMEDIATION_STARTED
+  REMEDIATION_UPDATED
+  EVIDENCE_LINKED
+  EVIDENCE_UNLINKED
+  SUBMITTED_FOR_VALIDATION
+  VALIDATION_ACCEPTED
+  VALIDATION_REJECTED
+  CLOSED
+  REOPENED
+}
+
 model User {
   id                  String       @id @default(uuid()) @db.Uuid
   email               String       @unique
@@ -264,6 +318,11 @@ model Organization {
   auditTests               AuditTest[]
   auditTestEvidence        AuditTestEvidence[]
   auditTestObservations    AuditTestObservation[]
+  findings                 Finding[]
+  findingSequences         FindingSequence[]
+  findingEvidence          FindingEvidence[]
+  findingValidations       FindingValidation[]
+  findingActivities        FindingActivity[]
 
   @@index([status, updatedAt])
 }
@@ -317,6 +376,12 @@ model Membership {
   linkedAuditTestEvidence       AuditTestEvidence[]              @relation("AuditTestEvidenceLinkedBy")
   createdAuditTestObservations  AuditTestObservation[]           @relation("AuditTestObservationCreatedBy")
   updatedAuditTestObservations  AuditTestObservation[]           @relation("AuditTestObservationUpdatedBy")
+  ownedFindings                 Finding[]                        @relation("FindingOwner")
+  createdFindings               Finding[]                        @relation("FindingCreatedBy")
+  updatedFindings               Finding[]                        @relation("FindingUpdatedBy")
+  linkedFindingEvidence         FindingEvidence[]                @relation("FindingEvidenceLinkedBy")
+  findingValidations            FindingValidation[]              @relation("FindingValidationReviewer")
+  findingActivities             FindingActivity[]                @relation("FindingActivityActor")
 
   @@unique([organizationId, userId])
   @@unique([organizationId, id])
@@ -688,6 +753,7 @@ model EvidenceVersion {
   evidence               Evidence            @relation(fields: [organizationId, evidenceId], references: [organizationId, id], onDelete: Cascade)
   uploadedByMembership   Membership          @relation("EvidenceVersionUploadedBy", fields: [organizationId, uploadedByMembershipId], references: [organizationId, id], onDelete: Restrict)
   auditTestEvidence      AuditTestEvidence[]
+  findingEvidences       FindingEvidence[]
 
   @@unique([organizationId, evidenceId, versionNumber])
   @@unique([organizationId, id])
@@ -884,9 +950,121 @@ model AuditTestObservation {
   auditTest             AuditTest    @relation(fields: [organizationId, auditTestId], references: [organizationId, id], onDelete: Cascade)
   createdByMembership   Membership   @relation("AuditTestObservationCreatedBy", fields: [organizationId, createdByMembershipId], references: [organizationId, id], onDelete: Restrict)
   updatedByMembership   Membership   @relation("AuditTestObservationUpdatedBy", fields: [organizationId, updatedByMembershipId], references: [organizationId, id], onDelete: Restrict)
+  finding               Finding?
 
   @@unique([organizationId, id])
   @@index([organizationId, auditTestId, createdAt])
+}
+
+model Finding {
+  id                       String                 @id @default(uuid()) @db.Uuid
+  organizationId           String                 @db.Uuid
+  findingNumber            String
+  title                    String
+  description              String
+  severity                 FindingSeverity
+  status                   FindingStatus          @default(OPEN)
+  sourceType               FindingSourceType
+  sourceObservationId      String?                @db.Uuid
+  ownerMembershipId        String?                @db.Uuid
+  rootCause                String?
+  impact                   String?
+  recommendation           String?
+  remediationPlan          String?
+  dueDate                  DateTime?
+  resolutionType           FindingResolutionType?
+  resolutionRationale      String?
+  openedAt                 DateTime               @default(now())
+  submittedForValidationAt DateTime?
+  closedAt                 DateTime?
+  createdByMembershipId    String                 @db.Uuid
+  updatedByMembershipId    String                 @db.Uuid
+  createdAt                DateTime               @default(now())
+  updatedAt                DateTime               @updatedAt
+  organization             Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  sourceObservation        AuditTestObservation?  @relation(fields: [organizationId, sourceObservationId], references: [organizationId, id], onDelete: Restrict)
+  ownerMembership          Membership?            @relation("FindingOwner", fields: [organizationId, ownerMembershipId], references: [organizationId, id], onDelete: Restrict)
+  createdByMembership      Membership             @relation("FindingCreatedBy", fields: [organizationId, createdByMembershipId], references: [organizationId, id], onDelete: Restrict)
+  updatedByMembership      Membership             @relation("FindingUpdatedBy", fields: [organizationId, updatedByMembershipId], references: [organizationId, id], onDelete: Restrict)
+  evidence                 FindingEvidence[]
+  validations              FindingValidation[]
+  activities               FindingActivity[]
+
+  @@unique([organizationId, findingNumber])
+  @@unique([organizationId, sourceObservationId])
+  @@unique([organizationId, id])
+  @@index([organizationId, status, updatedAt])
+  @@index([organizationId, severity, updatedAt])
+  @@index([organizationId, ownerMembershipId])
+  @@index([organizationId, dueDate])
+  @@index([organizationId, sourceType])
+  @@index([organizationId, createdAt])
+}
+
+model FindingSequence {
+  organizationId String       @db.Uuid
+  year           Int
+  nextNumber     Int          @default(1)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@id([organizationId, year])
+}
+
+model FindingEvidence {
+  id                   String                 @id @default(uuid()) @db.Uuid
+  organizationId       String                 @db.Uuid
+  findingId            String                 @db.Uuid
+  evidenceVersionId    String                 @db.Uuid
+  purpose              FindingEvidencePurpose
+  linkedByMembershipId String                 @db.Uuid
+  createdAt            DateTime               @default(now())
+  organization         Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  finding              Finding                @relation(fields: [organizationId, findingId], references: [organizationId, id], onDelete: Cascade)
+  evidenceVersion      EvidenceVersion        @relation(fields: [organizationId, evidenceVersionId], references: [organizationId, id], onDelete: Restrict)
+  linkedByMembership   Membership             @relation("FindingEvidenceLinkedBy", fields: [organizationId, linkedByMembershipId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@unique([organizationId, findingId, evidenceVersionId])
+  @@index([organizationId, findingId, createdAt])
+  @@index([organizationId, evidenceVersionId])
+}
+
+model FindingValidation {
+  id                   String                    @id @default(uuid()) @db.Uuid
+  organizationId       String                    @db.Uuid
+  findingId            String                    @db.Uuid
+  reviewerMembershipId String                    @db.Uuid
+  decision             FindingValidationDecision
+  notes                String?
+  resolutionType       FindingResolutionType?
+  resolutionRationale  String?
+  createdAt            DateTime                  @default(now())
+  organization         Organization              @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  finding              Finding                   @relation(fields: [organizationId, findingId], references: [organizationId, id], onDelete: Cascade)
+  reviewerMembership   Membership                @relation("FindingValidationReviewer", fields: [organizationId, reviewerMembershipId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@index([organizationId, findingId, createdAt])
+  @@index([organizationId, reviewerMembershipId])
+}
+
+model FindingActivity {
+  id                String              @id @default(uuid()) @db.Uuid
+  organizationId    String              @db.Uuid
+  findingId         String              @db.Uuid
+  actorMembershipId String              @db.Uuid
+  type              FindingActivityType
+  fromStatus        FindingStatus?
+  toStatus          FindingStatus?
+  metadata          Json?
+  createdAt         DateTime            @default(now())
+  organization      Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  finding           Finding             @relation(fields: [organizationId, findingId], references: [organizationId, id], onDelete: Cascade)
+  actorMembership   Membership          @relation("FindingActivityActor", fields: [organizationId, actorMembershipId], references: [organizationId, id], onDelete: Restrict)
+
+  @@unique([organizationId, id])
+  @@index([organizationId, findingId, createdAt])
+  @@index([organizationId, actorMembershipId])
 }
 
 model RiskControl {

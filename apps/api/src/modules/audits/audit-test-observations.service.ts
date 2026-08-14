@@ -30,6 +30,7 @@ export class AuditTestObservationsService {
           orderBy: { createdAt: 'asc' },
           include: {
             createdByMembership: { include: { user: { select: { id: true, email: true } } } },
+            finding: { select: { id: true, findingNumber: true } },
           },
         })
         .then((items) =>
@@ -38,6 +39,7 @@ export class AuditTestObservationsService {
             createdBy: item.createdByMembership
               ? { id: item.createdByMembership.id, name: item.createdByMembership.user.email }
               : null,
+            finding: item.finding,
           })),
         ),
     };
@@ -107,6 +109,11 @@ export class AuditTestObservationsService {
       where: { organizationId, auditTestId, id: observationId },
     });
     if (!observation) throw new NotFoundException('Observation not found');
+    const finding = await this.prisma.finding.findFirst({
+      where: { organizationId, sourceObservationId: observationId },
+      select: { id: true },
+    });
+    if (finding) throw new ConflictException('Cannot delete an observation that has been promoted to a Finding.');
     await this.prisma.auditTestObservation.delete({
       where: { organizationId_id: { organizationId, id: observationId } },
     });

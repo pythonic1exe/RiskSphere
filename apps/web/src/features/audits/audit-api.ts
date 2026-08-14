@@ -146,6 +146,7 @@ export type AuditObservation = {
   createdAt: string;
   updatedAt: string;
   createdBy?: MemberSummary | null;
+  finding?: { id: string; findingNumber: string } | null;
 };
 
 function queryString(params: Record<string, string | number | undefined>) {

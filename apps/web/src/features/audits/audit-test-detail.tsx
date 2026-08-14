@@ -44,6 +44,7 @@ import {
   testStatusLabel,
 } from './audit-format';
 import { CompleteAuditTestDialog } from './audit-sheets';
+import { PromoteFindingSheet } from '@/features/findings/finding-ui';
 
 function useOrganization() {
   return useQuery({
@@ -385,6 +386,7 @@ function ObservationRow({
   onSaved: () => void;
 }) {
   const [editing, setEditing] = useState(false);
+  const [promoteOpen, setPromoteOpen] = useState(false);
   const [content, setContent] = useState(item.content);
   const [saving, setSaving] = useState(false);
   async function save() {
@@ -430,20 +432,20 @@ function ObservationRow({
                 >
                   Edit
                 </button>
-                <button
+                {!item.finding ? <button
                   type="button"
-                  onClick={() => {
-                    void removeAuditTestObservation(organizationId, testId, item.id).then(onSaved);
-                  }}
-                  className="hover:text-danger"
+                  onClick={() => setPromoteOpen(true)}
+                  className="hover:text-primary"
                 >
-                  Remove
-                </button>
+                  Promote to Finding
+                </button> : <a href={`/findings/${item.finding.id}`} className="text-primary hover:underline">{item.finding.findingNumber}</a>}
+                <button type="button" onClick={() => { void removeAuditTestObservation(organizationId, testId, item.id).then(onSaved); }} className="hover:text-danger">Remove</button>
               </span>
-            ) : null}
+            ) : item.finding ? <a href={`/findings/${item.finding.id}`} className="text-primary hover:underline">Promoted to {item.finding.findingNumber}</a> : null}
           </div>
         </>
       )}
+      <PromoteFindingSheet organizationId={organizationId} auditTestId={testId} observation={item} open={promoteOpen} onOpenChange={setPromoteOpen} onCreated={() => onSaved()} />
     </div>
   );
 }

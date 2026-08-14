@@ -14,6 +14,7 @@ import { ControlsModule } from './modules/controls/controls.module';
 import { ComplianceModule } from './modules/compliance/compliance.module';
 import { EvidenceModule } from './modules/evidence/evidence.module';
 import { AuditsModule } from './modules/audits/audits.module';
+import { FindingsModule } from './modules/findings/findings.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { AuditsModule } from './modules/audits/audits.module';
     ComplianceModule,
     EvidenceModule,
     AuditsModule,
+    FindingsModule,
   ],
 })
 export class AppModule {}
