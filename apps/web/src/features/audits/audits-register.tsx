@@ -22,6 +22,7 @@ import {
   auditTypeLabel,
   formatAuditDate,
   formatAuditDateRange,
+  humanizePerson,
   statusTone,
 } from './audit-format';
 import { AuditRegisterSkeleton } from './audit-loading';
@@ -86,7 +87,7 @@ function ActiveEngagements({
               type="button"
               key={audit.id}
               onClick={() => onOpen(audit.id)}
-              className="group grid w-full gap-4 px-1 py-5 text-left transition-colors hover:bg-bg-hover/30 md:grid-cols-[minmax(0,1.4fr)_minmax(260px,1fr)_auto] md:items-center"
+              className="group grid w-full gap-5 px-1 py-5 text-left transition-colors hover:bg-bg-hover/30 md:grid-cols-[minmax(0,1.1fr)_minmax(280px,.9fr)_minmax(150px,.45fr)] md:items-center"
             >
               <span className="min-w-0">
                 <span
@@ -123,7 +124,12 @@ function ActiveEngagements({
                 </span>
               </span>
               <span className="flex items-center justify-end gap-3 text-sm text-text-muted">
-                <span>{audit.leadAuditor?.name ?? 'No lead auditor'}</span>
+                <span>
+                  <span className="block text-xs text-text-muted">Lead</span>
+                  <span className="mt-1 block text-sm text-text-secondary">
+                    {humanizePerson(audit.leadAuditor?.name)}
+                  </span>
+                </span>
                 <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
               </span>
             </button>
@@ -162,7 +168,7 @@ function AuditRow({ audit, onOpen }: { audit: Audit; onOpen: () => void }) {
         </span>
       </span>
       <span className="truncate text-sm text-text-secondary">
-        {audit.leadAuditor?.name ?? 'Unassigned'}
+        {humanizePerson(audit.leadAuditor?.name)}
       </span>
       <span className="text-sm text-text-secondary">{formatAuditDate(audit.plannedEndAt)}</span>
       <span className={`text-sm ${statusTone(audit.status)}`}>

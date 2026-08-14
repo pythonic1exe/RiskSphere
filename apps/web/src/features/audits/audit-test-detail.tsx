@@ -36,6 +36,8 @@ import {
 } from './audit-api';
 import {
   formatAuditDate,
+  humanizePerson,
+  personEmail,
   resultTone,
   statusTone,
   testResultLabel,
@@ -417,7 +419,7 @@ function ObservationRow({
           </p>
           <div className="mt-2 flex items-center justify-between gap-3 text-xs text-text-muted">
             <span>
-              {item.createdBy?.name ?? 'Organization member'} · {formatAuditDate(item.createdAt)}
+              {humanizePerson(item.createdBy?.name)} · {formatAuditDate(item.createdAt)}
             </span>
             {!readOnly ? (
               <span className="flex gap-3">
@@ -533,7 +535,12 @@ export function AuditTestDetail() {
                     : 'No linked control or requirement'}
               </p>
               <p className="mt-2 text-sm text-text-muted">
-                Assigned to {test.assignedTo?.name ?? 'Unassigned'}
+                Assigned to {humanizePerson(test.assignedTo?.name)}
+                {personEmail(test.assignedTo?.name) ? (
+                  <span className="ml-2 text-xs text-text-disabled">
+                    {personEmail(test.assignedTo?.name)}
+                  </span>
+                ) : null}
               </p>
             </div>
             <div className="flex items-center gap-2">

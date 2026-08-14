@@ -16,15 +16,15 @@ export const auditTypeLabel: Record<AuditType, string> = {
 export const auditStatusLabel: Record<AuditStatus, string> = {
   DRAFT: 'Draft',
   PLANNED: 'Planned',
-  IN_PROGRESS: 'In progress',
-  UNDER_REVIEW: 'Under review',
+  IN_PROGRESS: 'In Progress',
+  UNDER_REVIEW: 'Under Review',
   COMPLETED: 'Completed',
   CANCELLED: 'Cancelled',
 };
 export const testStatusLabel: Record<AuditTestStatus, string> = {
-  NOT_STARTED: 'Not started',
-  IN_PROGRESS: 'In progress',
-  READY_FOR_REVIEW: 'Ready for review',
+  NOT_STARTED: 'Not Started',
+  IN_PROGRESS: 'In Progress',
+  READY_FOR_REVIEW: 'Ready for Review',
   COMPLETED: 'Completed',
   BLOCKED: 'Blocked',
 };
@@ -32,10 +32,10 @@ export const testResultLabel: Record<AuditTestResult, string> = {
   PASS: 'Pass',
   FAIL: 'Fail',
   EXCEPTION: 'Exception',
-  NOT_APPLICABLE: 'Not applicable',
+  NOT_APPLICABLE: 'Not Applicable',
 };
 export const auditMemberRoleLabel: Record<AuditMemberRole, string> = {
-  LEAD_AUDITOR: 'Lead auditor',
+  LEAD_AUDITOR: 'Lead Auditor',
   AUDITOR: 'Auditor',
   REVIEWER: 'Reviewer',
   OBSERVER: 'Observer',
@@ -49,6 +49,21 @@ export function formatAuditDate(value: string | null | undefined) {
 }
 export function formatAuditDateRange(start: string | null, end: string | null) {
   return `${formatAuditDate(start)} – ${formatAuditDate(end)}`;
+}
+export function humanizePerson(name: string | null | undefined, email?: string | null) {
+  const value = (name || email || '').trim();
+  if (!value) return 'Unassigned';
+  if (!value.includes('@')) return value;
+  const local = (value.split('@')[0] ?? '').replace(/[._-]+/g, ' ').trim();
+  return local
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+export function personEmail(name: string | null | undefined, email?: string | null) {
+  const value = (email || name || '').trim();
+  return value.includes('@') ? value : null;
 }
 export function statusTone(status: AuditStatus | AuditTestStatus) {
   return status === 'COMPLETED'

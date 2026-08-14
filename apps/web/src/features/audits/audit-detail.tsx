@@ -2,9 +2,15 @@
 
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, ArrowRight, MoreHorizontal, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, MoreHorizontal, Plus } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { MorphNativeSelect } from '@/components/ui/morph-select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -28,6 +34,7 @@ import {
   type Audit,
   type AuditMember,
   type AuditStatus,
+  type AuditTestResult,
   type OrganizationMember,
 } from './audit-api';
 import {
@@ -36,7 +43,12 @@ import {
   auditTypeLabel,
   formatAuditDate,
   formatAuditDateRange,
+  humanizePerson,
+  personEmail,
+  resultTone,
   statusTone,
+  testResultLabel,
+  testStatusLabel,
 } from './audit-format';
 import { AuditDetailSkeleton } from './audit-loading';
 import {
@@ -70,22 +82,48 @@ function lifecycleAction(status: AuditStatus) {
 }
 function Lifecycle({ status }: { status: AuditStatus }) {
   const steps: AuditStatus[] = ['DRAFT', 'PLANNED', 'IN_PROGRESS', 'UNDER_REVIEW', 'COMPLETED'];
+  if (status === 'CANCELLED') {
+    return (
+      <span className="inline-flex items-center rounded-md border border-danger/30 px-3 py-1.5 text-xs font-medium text-danger">
+        Cancelled
+      </span>
+    );
+  }
+  const currentIndex = steps.indexOf(status);
   return (
-    <div className="flex flex-wrap items-center gap-2 text-xs text-text-muted">
+    <div className="flex min-w-[620px] items-start text-xs text-text-muted">
       {steps.map((step, index) => (
-        <span key={step} className="flex items-center gap-2">
-          <span
-            className={
-              step === status
-                ? 'font-medium text-primary'
-                : steps.indexOf(status) > index
-                  ? 'text-text-secondary'
-                  : ''
-            }
-          >
-            {auditStatusLabel[step]}
+        <span key={step} className="flex flex-1 items-start">
+          <span className="flex min-w-0 flex-col items-center gap-2 text-center">
+            <span
+              className={`relative flex items-center justify-center rounded-full border ${
+                step === status
+                  ? 'size-2.5 border-primary bg-primary'
+                  : currentIndex > index
+                    ? 'size-2 border-text-secondary bg-text-secondary'
+                    : 'size-2 border-text-disabled bg-transparent'
+              }`}
+            />
+            {currentIndex > index ? (
+              <Check className="pointer-events-none absolute mt-0.5 size-1.5 text-bg-page" />
+            ) : null}
+            <span
+              className={
+                step === status
+                  ? 'font-medium text-primary'
+                  : currentIndex > index
+                    ? 'text-text-muted'
+                    : 'text-text-disabled'
+              }
+            >
+              {auditStatusLabel[step]}
+            </span>
           </span>
-          {index < steps.length - 1 ? <span className="text-text-disabled">—</span> : null}
+          {index < steps.length - 1 ? (
+            <span
+              className={`mt-[4px] h-px flex-1 ${currentIndex > index ? 'bg-text-secondary/70' : 'bg-border-subtle/70'}`}
+            />
+          ) : null}
         </span>
       ))}
     </div>
@@ -105,7 +143,7 @@ function Progress({ audit }: { audit: Audit }) {
           {audit.testSummary.completionPercent}%
         </span>
       </div>
-      <div className="mt-4 h-1.5 bg-bg-elevated">
+      <div className="mt-4 max-w-3xl h-1.5 bg-bg-elevated">
         <div
           className="h-1.5 bg-primary"
           style={{ width: `${audit.testSummary.completionPercent}%` }}
@@ -151,7 +189,7 @@ function AuditDetails({ audit }: { audit: Audit }) {
   const rows = [
     ['Type', auditTypeLabel[audit.type]],
     ['Status', auditStatusLabel[audit.status]],
-    ['Lead auditor', audit.leadAuditor?.name ?? 'Unassigned'],
+    ['Lead auditor', humanizePerson(audit.leadAuditor?.name)],
     ['Planned start', formatAuditDate(audit.plannedStartAt)],
     ['Planned end', formatAuditDate(audit.plannedEndAt)],
     ['Started', formatAuditDate(audit.startedAt)],
@@ -226,7 +264,7 @@ function Overview({
           <div className="mt-3 space-y-2 text-sm">
             {members.slice(0, 3).map((item) => (
               <div key={item.id} className="flex justify-between gap-3">
-                <span className="text-text-secondary">{item.member?.name ?? 'Unknown member'}</span>
+                <span className="text-text-secondary">{humanizePerson(item.member?.name)}</span>
                 <span className="text-text-muted">{auditMemberRoleLabel[item.role]}</span>
               </div>
             ))}
@@ -312,16 +350,24 @@ function ScopeTab({
                     </span>
                   </span>
                   {audit.status !== 'COMPLETED' && audit.status !== 'CANCELLED' ? (
-                    <button
-                      type="button"
-                      aria-label="Remove scope"
-                      className="text-text-muted hover:text-danger"
-                      onClick={() => {
-                        void removeAuditScope(organizationId, audit.id, item.id).then(refresh);
-                      }}
-                    >
-                      <Trash2 className="size-4" />
-                    </button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger
+                        className="inline-flex size-8 items-center justify-center rounded-md text-text-muted hover:bg-bg-hover hover:text-text-primary"
+                        aria-label="Scope item actions"
+                      >
+                        <MoreHorizontal className="size-4" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          className="text-danger focus:text-danger"
+                          onClick={() => {
+                            void removeAuditScope(organizationId, audit.id, item.id).then(refresh);
+                          }}
+                        >
+                          Remove from scope
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   ) : null}
                 </div>
               ))}
@@ -400,47 +446,69 @@ function TeamTab({
       <div className="divide-y divide-border-subtle/70 border-y border-border-subtle/70">
         {existing.map((item) => (
           <div key={item.id} className="flex items-center justify-between gap-3 py-4">
-            <span>
-              <span className="block text-sm font-medium text-text-primary">
-                {item.member?.name ?? 'Unknown member'}
+            <span className="flex min-w-0 items-start gap-3">
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-full border border-border-subtle bg-bg-elevated text-xs font-medium text-text-secondary">
+                {humanizePerson(item.member?.name)
+                  .split(' ')
+                  .map((part) => part[0])
+                  .join('')
+                  .slice(0, 2)}
               </span>
-              <span className="mt-1 block text-xs text-text-muted">
-                {audit.status !== 'COMPLETED' && audit.status !== 'CANCELLED' ? (
-                  <MorphNativeSelect
-                    aria-label={`Role for ${item.member?.name ?? 'member'}`}
-                    value={item.role}
-                    onChange={(value) => {
-                      void updateAuditMember(
-                        organizationId,
-                        audit.id,
-                        item.id,
-                        value as AuditMember['role'],
-                      ).then(refresh);
-                    }}
-                    className="mt-1 h-8 text-xs"
-                  >
-                    {Object.entries(auditMemberRoleLabel).map(([key, label]) => (
-                      <option key={key} value={key}>
-                        {label}
-                      </option>
-                    ))}
-                  </MorphNativeSelect>
-                ) : (
-                  auditMemberRoleLabel[item.role]
-                )}
+              <span className="min-w-0">
+                <span className="block truncate text-sm font-medium text-text-primary">
+                  {humanizePerson(item.member?.name)}
+                </span>
+                {personEmail(item.member?.name) ? (
+                  <span className="mt-0.5 block truncate text-xs text-text-muted">
+                    {personEmail(item.member?.name)}
+                  </span>
+                ) : null}
+                <span className="mt-1 block text-xs text-text-muted">
+                  {audit.status !== 'COMPLETED' && audit.status !== 'CANCELLED' ? (
+                    <MorphNativeSelect
+                      aria-label={`Role for ${item.member?.name ?? 'member'}`}
+                      value={item.role}
+                      onChange={(value) => {
+                        void updateAuditMember(
+                          organizationId,
+                          audit.id,
+                          item.id,
+                          value as AuditMember['role'],
+                        ).then(refresh);
+                      }}
+                      className="mt-1 h-8 text-xs"
+                    >
+                      {Object.entries(auditMemberRoleLabel).map(([key, label]) => (
+                        <option key={key} value={key}>
+                          {label}
+                        </option>
+                      ))}
+                    </MorphNativeSelect>
+                  ) : (
+                    auditMemberRoleLabel[item.role]
+                  )}
+                </span>
               </span>
             </span>
             {audit.status !== 'COMPLETED' && audit.status !== 'CANCELLED' ? (
-              <button
-                type="button"
-                aria-label="Remove member"
-                className="text-text-muted hover:text-danger"
-                onClick={() => {
-                  void removeAuditMember(organizationId, audit.id, item.id).then(refresh);
-                }}
-              >
-                <Trash2 className="size-4" />
-              </button>
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  className="inline-flex size-8 items-center justify-center rounded-md text-text-muted hover:bg-bg-hover hover:text-text-primary"
+                  aria-label="Team member actions"
+                >
+                  <MoreHorizontal className="size-4" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    className="text-danger focus:text-danger"
+                    onClick={() => {
+                      void removeAuditMember(organizationId, audit.id, item.id).then(refresh);
+                    }}
+                  >
+                    Remove member
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             ) : null}
           </div>
         ))}
@@ -533,11 +601,25 @@ export function AuditDetail() {
               <p className="mt-3 max-w-3xl text-sm text-text-secondary">
                 {audit.description ?? 'Assurance engagement workspace.'}
               </p>
-              <p className="mt-3 text-sm text-text-muted">
-                {auditTypeLabel[audit.type]} ·{' '}
-                {formatAuditDateRange(audit.plannedStartAt, audit.plannedEndAt)} ·{' '}
-                {audit.leadAuditor?.name ?? 'No lead auditor'}
-              </p>
+              <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-text-muted">
+                <span>{auditTypeLabel[audit.type]}</span>
+                <span aria-hidden="true">·</span>
+                <span>{formatAuditDateRange(audit.plannedStartAt, audit.plannedEndAt)}</span>
+                <span aria-hidden="true">·</span>
+                <span>
+                  Lead: {humanizePerson(audit.leadAuditor?.name)}
+                  {personEmail(audit.leadAuditor?.name) ? (
+                    <span className="ml-2 text-xs text-text-disabled">
+                      {personEmail(audit.leadAuditor?.name)}
+                    </span>
+                  ) : null}
+                </span>
+              </div>
+              {audit.status === 'COMPLETED' ? (
+                <p className="mt-3 text-sm text-success">
+                  Completed {formatAuditDate(audit.completedAt)}
+                </p>
+              ) : null}
             </div>
             <div className="flex items-center gap-2">
               {action ? <Button onClick={() => void runLifecycle()}>{action[0]}</Button> : null}
@@ -558,7 +640,9 @@ export function AuditDetail() {
               ) : null}
             </div>
           </div>
-          <Lifecycle status={audit.status} />
+          <div className="overflow-x-auto pb-1">
+            <Lifecycle status={audit.status} />
+          </div>
           {audit.status === 'CANCELLED' ? (
             <p className="text-sm text-danger">
               This audit was cancelled. Historical records remain available.
@@ -639,14 +723,18 @@ function TestsPreview({
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('ALL');
+  const [result, setResult] = useState('ALL');
+  const [assignee, setAssignee] = useState('');
   const [page, setPage] = useState(1);
   const queryClient = useQueryClient();
   const testsQuery = useQuery({
-    queryKey: ['audit-tests', organizationId, audit.id, { search, status, page }],
+    queryKey: ['audit-tests', organizationId, audit.id, { search, status, result, assignee, page }],
     queryFn: () =>
       getAuditTests(organizationId, audit.id, {
         search,
         ...(status !== 'ALL' ? { status: status as never } : {}),
+        ...(result !== 'ALL' ? { result: result as AuditTestResult } : {}),
+        ...(assignee ? { assignedToMembershipId: assignee } : {}),
         page,
         pageSize: 10,
       }),
@@ -683,7 +771,7 @@ function TestsPreview({
           New Test
         </Button>
       </div>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 border-y border-border-subtle/60 py-3">
         <Input
           value={search}
           onChange={(event) => {
@@ -702,11 +790,40 @@ function TestsPreview({
           }}
         >
           <option value="ALL">Status: All</option>
-          <option value="NOT_STARTED">Not started</option>
-          <option value="IN_PROGRESS">In progress</option>
-          <option value="READY_FOR_REVIEW">Ready for review</option>
+          <option value="NOT_STARTED">Not Started</option>
+          <option value="IN_PROGRESS">In Progress</option>
+          <option value="READY_FOR_REVIEW">Ready for Review</option>
           <option value="COMPLETED">Completed</option>
           <option value="BLOCKED">Blocked</option>
+        </MorphNativeSelect>
+        <MorphNativeSelect
+          aria-label="Test result"
+          value={result}
+          onChange={(value) => {
+            setResult(value);
+            setPage(1);
+          }}
+        >
+          <option value="ALL">Result: All</option>
+          <option value="PASS">Pass</option>
+          <option value="EXCEPTION">Exception</option>
+          <option value="FAIL">Fail</option>
+          <option value="NOT_APPLICABLE">Not Applicable</option>
+        </MorphNativeSelect>
+        <MorphNativeSelect
+          aria-label="Test assignee"
+          value={assignee}
+          onChange={(value) => {
+            setAssignee(value);
+            setPage(1);
+          }}
+        >
+          <option value="">Assignee: All</option>
+          {members.map((member) => (
+            <option key={member.id} value={member.id}>
+              {humanizePerson(member.name, member.email)}
+            </option>
+          ))}
         </MorphNativeSelect>
       </div>
       {tests.length ? (
@@ -716,16 +833,31 @@ function TestsPreview({
               type="button"
               key={test.id}
               onClick={() => onOpen(test.id)}
-              className="group flex w-full items-center justify-between gap-4 py-4 text-left hover:bg-bg-hover/30"
+              className="group grid w-full gap-3 py-4 text-left hover:bg-bg-hover/30 sm:grid-cols-[minmax(0,1.4fr)_minmax(180px,.8fr)_auto] sm:items-center"
             >
-              <span>
+              <span className="min-w-0">
                 <span className="block text-xs text-text-muted">{test.code}</span>
-                <span className="mt-1 block text-sm font-medium text-text-primary">
+                <span className="mt-1 block truncate text-sm font-medium text-text-primary">
                   {test.title}
                 </span>
+                <span className="mt-1 block truncate text-xs text-text-muted">
+                  {test.control
+                    ? `${test.control.code} · ${test.control.title}`
+                    : test.organizationRequirement
+                      ? `${test.organizationRequirement.code} · ${test.organizationRequirement.title}`
+                      : 'No linked control or requirement'}
+                </span>
               </span>
-              <span className="flex items-center gap-4 text-sm">
-                <span className={statusTone(test.status)}>{test.status.replaceAll('_', ' ')}</span>
+              <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-muted">
+                <span>{humanizePerson(test.assignedTo?.name)}</span>
+                <span className={statusTone(test.status)}>{testStatusLabel[test.status]}</span>
+                {test.result ? (
+                  <span className={resultTone(test.result)}>{testResultLabel[test.result]}</span>
+                ) : null}
+                <span>Evidence {test.evidenceCount ?? 0}</span>
+                <span>Observations {test.observationCount ?? 0}</span>
+              </span>
+              <span className="flex justify-end">
                 <ArrowRight className="size-4 text-text-muted transition-transform group-hover:translate-x-0.5" />
               </span>
             </button>
