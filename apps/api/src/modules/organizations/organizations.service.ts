@@ -190,6 +190,23 @@ export class OrganizationsService {
     };
   }
 
+  async getOrganization(access: OrganizationAccess) {
+    const organization = await this.prisma.organization.findFirst({ where: { id: access.organization.id }, include: { onboarding: true } });
+    if (!organization) throw new NotFoundException('Organization not found');
+    return { organization };
+  }
+
+  async summary(access: OrganizationAccess) {
+    const organizationId = access.organization.id;
+    const [totalMembers, activeMembers, pendingInvitations, units] = await Promise.all([
+      this.prisma.membership.count({ where: { organizationId, status: { not: 'REMOVED' } } }),
+      this.prisma.membership.count({ where: { organizationId, status: 'ACTIVE' } }),
+      this.prisma.invitation.count({ where: { organizationId, status: 'PENDING' } }),
+      this.prisma.organizationUnit.count({ where: { organizationId, isActive: true } }),
+    ]);
+    return { members: { total: totalMembers, active: activeMembers }, invitations: { pending: pendingInvitations }, units: { total: units } };
+  }
+
   async updateOrganization(access: OrganizationAccess, dto: UpdateOrganizationDto) {
     if (!this.authorizationService.canManageOrganization(access.roleCodes)) {
       throw new ForbiddenException('Not allowed to manage this organization');

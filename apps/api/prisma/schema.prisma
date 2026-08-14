@@ -362,6 +362,8 @@ model Organization {
   tasks                    Task[]
   taskSequences            TaskSequence[]
   taskActivities           TaskActivity[]
+  organizationUnits        OrganizationUnit[]
+  organizationUnitMembers  OrganizationUnitMember[]
 
   @@index([status, updatedAt])
 }
@@ -425,6 +427,7 @@ model Membership {
   createdTasks                  Task[]                           @relation("TaskCreatedBy")
   updatedTasks                  Task[]                           @relation("TaskUpdatedBy")
   taskActivities                TaskActivity[]                   @relation("TaskActivityActor")
+  organizationUnitMemberships   OrganizationUnitMember[]
 
   @@unique([organizationId, userId])
   @@unique([organizationId, id])
@@ -461,6 +464,42 @@ model MembershipRole {
   @@unique([membershipId, roleId])
   @@index([organizationId, membershipId])
   @@index([organizationId, roleId])
+}
+
+model OrganizationUnit {
+  id             String                   @id @default(uuid()) @db.Uuid
+  organizationId String                   @db.Uuid
+  name           String
+  code           String?
+  description    String?
+  parentId       String?                  @db.Uuid
+  isActive       Boolean                  @default(true)
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
+  organization   Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  parent         OrganizationUnit?        @relation("OrganizationUnitHierarchy", fields: [organizationId, parentId], references: [organizationId, id], onDelete: Restrict)
+  children       OrganizationUnit[]       @relation("OrganizationUnitHierarchy")
+  members        OrganizationUnitMember[]
+
+  @@unique([organizationId, id])
+  @@unique([organizationId, code])
+  @@index([organizationId, parentId])
+  @@index([organizationId, isActive])
+  @@index([organizationId, name])
+}
+
+model OrganizationUnitMember {
+  organizationId     String           @db.Uuid
+  organizationUnitId String           @db.Uuid
+  membershipId       String           @db.Uuid
+  createdAt          DateTime         @default(now())
+  organization       Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationUnit   OrganizationUnit @relation(fields: [organizationId, organizationUnitId], references: [organizationId, id], onDelete: Cascade)
+  membership         Membership       @relation(fields: [organizationId, membershipId], references: [organizationId, id], onDelete: Restrict)
+
+  @@id([organizationId, organizationUnitId, membershipId])
+  @@index([organizationId, membershipId])
+  @@index([organizationId, organizationUnitId])
 }
 
 model OrganizationOnboarding {

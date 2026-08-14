@@ -17,6 +17,7 @@ import { OrganizationAuthorizationService } from '../../common/authorization';
 import { EmailService } from '../email';
 import type { AcceptInvitationDto } from './dto/accept-invitation.dto';
 import type { CreateInvitationDto } from './dto/create-invitation.dto';
+import type { ListInvitationsDto } from './dto/list-invitations.dto';
 
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
@@ -51,6 +52,12 @@ export class InvitationsService {
     }
 
     const normalizedEmail = normalizeEmail(dto.email);
+
+    const existingMember = await this.prisma.membership.findFirst({
+      where: { organizationId: access.organization.id, status: 'ACTIVE', user: { email: normalizedEmail } },
+      select: { id: true },
+    });
+    if (existingMember) throw new ConflictException('An active organization member already exists for this email');
 
     const existingPendingInvitation = await this.prisma.invitation.findFirst({
       where: {
@@ -115,6 +122,26 @@ export class InvitationsService {
       inviteToken: rawToken,
       role,
     };
+  }
+
+  async listInvitations(access: OrganizationAccess, dto: ListInvitationsDto) {
+    if (!this.authorizationService.canInviteMembers(access.roleCodes)) throw new ForbiddenException('Not allowed to view invitations');
+    const organizationId = access.organization.id; const page = dto.page ?? 1; const pageSize = dto.pageSize ?? 20;
+    const where: Prisma.InvitationWhereInput = { organizationId, ...(dto.status ? { status: dto.status } : {}), ...(dto.roleId ? { roleId: dto.roleId } : {}), ...(dto.search ? { invitedEmail: { contains: dto.search, mode: 'insensitive' } } : {}) };
+    const orderBy = { [dto.sortBy ?? 'createdAt']: dto.sortOrder ?? 'desc' };
+    const [data, total] = await Promise.all([this.prisma.invitation.findMany({ where, include: { role: true, invitedByMembership: { include: { user: { select: { email: true } } } } }, orderBy, skip: (page - 1) * pageSize, take: pageSize }), this.prisma.invitation.count({ where })]);
+    return { data: data.map((item) => ({ id: item.id, organizationId: item.organizationId, invitedEmail: item.invitedEmail, status: item.status, role: { id: item.role.id, code: item.role.code, name: item.role.name }, invitedBy: item.invitedByMembership.user.email, expiresAt: item.expiresAt, createdAt: item.createdAt, acceptedAt: item.acceptedAt, revokedAt: item.revokedAt })), pagination: { page, pageSize, total, totalPages: Math.ceil(total / pageSize) } };
+  }
+
+  async resendInvitation(access: OrganizationAccess, invitationId: string) {
+    if (!this.authorizationService.canInviteMembers(access.roleCodes)) throw new ForbiddenException('Not allowed to resend invitations');
+    const organizationId = access.organization.id; const current = await this.prisma.invitation.findFirst({ where: { organizationId, id: invitationId }, include: { role: true } });
+    if (!current) throw new NotFoundException('Invitation not found');
+    if (current.status !== 'PENDING') throw new ConflictException('Only pending invitations can be resent');
+    if (current.expiresAt.getTime() <= Date.now()) throw new ConflictException('Expired invitations cannot be resent');
+    const rawToken = randomBytes(32).toString('base64url'); const updated = await this.prisma.invitation.update({ where: { id: invitationId }, data: { tokenHash: hashToken(rawToken), expiresAt: new Date(Date.now() + INVITATION_TTL_DAYS * 24 * 60 * 60 * 1000) }, include: { role: true } });
+    try { await this.emailService.sendOrganizationInvitation({ to: updated.invitedEmail, organizationName: access.organization.name, organizationSlug: access.organization.slug, roleName: updated.role.name, inviteToken: rawToken, expiresAt: updated.expiresAt }); } catch { throw new InternalServerErrorException('Unable to send invitation email'); }
+    return { invitation: updated, inviteToken: rawToken, role: updated.role };
   }
 
   async revokeInvitation(access: OrganizationAccess, invitationId: string) {

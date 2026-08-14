@@ -6,6 +6,7 @@ import { InvitationsService } from './invitations.service';
 describe('InvitationsService', () => {
   it('sends an invitation email after creating an invitation', async () => {
     const prisma = {
+      membership: { findFirst: vi.fn().mockResolvedValue(null) },
       invitation: {
         findFirst: vi.fn().mockResolvedValue(null),
         create: vi.fn().mockResolvedValue({
@@ -79,6 +80,7 @@ describe('InvitationsService', () => {
 
   it('removes a created invitation when email sending fails', async () => {
     const prisma = {
+      membership: { findFirst: vi.fn().mockResolvedValue(null) },
       invitation: {
         findFirst: vi.fn().mockResolvedValue(null),
         create: vi.fn().mockResolvedValue({

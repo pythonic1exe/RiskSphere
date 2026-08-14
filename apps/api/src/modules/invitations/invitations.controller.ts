@@ -2,11 +2,13 @@ import {
   Body,
   Controller,
   Delete,
+  Get,
   InternalServerErrorException,
   HttpCode,
   Param,
   Post,
   Req,
+  Query,
   ParseUUIDPipe,
   UseGuards,
 } from '@nestjs/common';
@@ -28,12 +30,17 @@ import { JwtAuthGuard } from '../../common/auth';
 import type { AuthenticatedRequest } from '../../common/auth/auth.types';
 import { OrganizationRoleGuard, OrganizationRoles } from '../../common/authorization';
 import { ORGANIZATION_ROLE_CODES } from '../../common/auth/auth.constants';
+// Nest uses the runtime constructor token for dependency injection.
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports
 import { InvitationsService } from './invitations.service';
+// DTOs remain runtime imports for Nest validation and Swagger metadata.
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports
 import {
   AcceptInvitationDto,
   AcceptInvitationResponseDto,
   CreateInvitationDto,
   CreateInvitationResponseDto,
+  ListInvitationsDto,
   RevokeInvitationResponseDto,
 } from './dto';
 
@@ -41,6 +48,15 @@ import {
 @Controller()
 export class InvitationsController {
   constructor(private readonly invitationsService: InvitationsService) {}
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List organization invitations' })
+  @UseGuards(JwtAuthGuard, OrganizationRoleGuard)
+  @Get('organizations/:organizationId/invitations')
+  list(@Req() request: AuthenticatedRequest, @Query() dto: ListInvitationsDto) {
+    if (!request.organizationAccess) throw new InternalServerErrorException('Organization access missing');
+    return this.invitationsService.listInvitations(request.organizationAccess, dto);
+  }
 
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create an invitation for a user in the organization' })
@@ -88,6 +104,18 @@ export class InvitationsController {
     }
 
     return this.invitationsService.revokeInvitation(request.organizationAccess, invitationId);
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Resend a pending organization invitation' })
+  @ApiParam({ name: 'organizationId', format: 'uuid' })
+  @ApiParam({ name: 'invitationId', format: 'uuid' })
+  @UseGuards(JwtAuthGuard, OrganizationRoleGuard)
+  @OrganizationRoles(ORGANIZATION_ROLE_CODES.OWNER, ORGANIZATION_ROLE_CODES.GRC_ADMIN)
+  @Post('organizations/:organizationId/invitations/:invitationId/resend')
+  resend(@Req() request: AuthenticatedRequest, @Param('organizationId', new ParseUUIDPipe()) _organizationId: string, @Param('invitationId', new ParseUUIDPipe()) invitationId: string) {
+    if (!request.organizationAccess) throw new InternalServerErrorException('Organization access missing');
+    return this.invitationsService.resendInvitation(request.organizationAccess, invitationId);
   }
 
   @ApiBearerAuth()

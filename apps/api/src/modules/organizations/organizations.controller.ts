@@ -78,6 +78,26 @@ export class OrganizationsController {
   }
 
   @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get organization profile and onboarding metadata' })
+  @ApiParam({ name: 'organizationId', format: 'uuid' })
+  @UseGuards(JwtAuthGuard, OrganizationRoleGuard)
+  @Get(':organizationId')
+  getOrganization(@Req() request: AuthenticatedRequest, @Param('organizationId', new ParseUUIDPipe()) _organizationId: string) {
+    if (!request.organizationAccess) throw new InternalServerErrorException('Organization access missing');
+    return this.organizationsService.getOrganization(request.organizationAccess);
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get organization administration summary' })
+  @ApiParam({ name: 'organizationId', format: 'uuid' })
+  @UseGuards(JwtAuthGuard, OrganizationRoleGuard)
+  @Get(':organizationId/summary')
+  getSummary(@Req() request: AuthenticatedRequest, @Param('organizationId', new ParseUUIDPipe()) _organizationId: string) {
+    if (!request.organizationAccess) throw new InternalServerErrorException('Organization access missing');
+    return this.organizationsService.summary(request.organizationAccess);
+  }
+
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Get onboarding state for an organization' })
   @ApiParam({ name: 'organizationId', format: 'uuid' })
   @ApiOkResponse({ type: OrganizationOnboardingResponseDto })
@@ -94,16 +114,6 @@ export class OrganizationsController {
     }
 
     return this.organizationsService.getOnboarding(request.organizationAccess);
-  }
-
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'List active organization members for tenant-scoped selectors' })
-  @UseGuards(JwtAuthGuard, OrganizationRoleGuard)
-  @Get(':organizationId/members')
-  listMembers(@Req() request: AuthenticatedRequest) {
-    if (!request.organizationAccess)
-      throw new InternalServerErrorException('Organization access missing');
-    return this.organizationsService.listActiveMembers(request.organizationAccess);
   }
 
   @ApiBearerAuth()
