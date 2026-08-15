@@ -139,6 +139,19 @@ export class ComplianceService {
     };
   }
 
+  async summary(access: OrganizationAccess) {
+    const frameworks = await this.prisma.organizationFramework.findMany({
+      where: { organizationId: this.organizationId(access), status: OrganizationFrameworkStatus.ACTIVE },
+      select: { requirements: { select: { status: true, controlLinks: { select: { id: true } } } } },
+    });
+    const requirements = frameworks.flatMap((framework) => framework.requirements);
+    const summary = calculateComplianceSummary(requirements.map((requirement) => requirement.status));
+    return {
+      ...summary,
+      controlCoveragePercent: summary.totalRequirements === 0 ? 0 : Math.round((requirements.filter((requirement) => requirement.controlLinks.length > 0).length / summary.totalRequirements) * 1000) / 10,
+    };
+  }
+
   async getFramework(access: OrganizationAccess, organizationFrameworkId: string) {
     return this.mapFramework(await this.getFrameworkRecord(access, organizationFrameworkId));
   }

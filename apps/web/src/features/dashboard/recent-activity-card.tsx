@@ -1,6 +1,6 @@
-import { DashboardCard } from "./dashboard-card"
-import type { DashboardData } from "./dashboard-data"
+import Link from 'next/link';
+import { DashboardCard } from './dashboard-card';
+import type { DashboardRecentlyUpdatedItem } from './dashboard-types';
 
-export function RecentActivityCard({ items }: { items: DashboardData["activity"] }) {
-  return <DashboardCard title="Recent activity" tone="quiet"><div className="grid gap-x-8 lg:grid-cols-2">{items.map((item) => <div key={`${item.actor}-${item.entity}`} className="flex items-center gap-3 py-3.5 first:pt-0 lg:py-3.5"><span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-bg-elevated text-[9px] font-medium text-text-secondary">{item.actor}</span><p className="min-w-0 flex-1 truncate text-sm text-text-muted">{item.action} <span className="font-medium text-text-primary">{item.entity}</span></p><span className="shrink-0 text-xs text-text-disabled">{item.time}</span></div>)}</div></DashboardCard>
-}
+const hrefs: Record<DashboardRecentlyUpdatedItem['entityType'], (id: string) => string> = { RISK: (id) => `/risks/${id}`, CONTROL: (id) => `/controls/${id}`, EVIDENCE: (id) => `/evidence/${id}`, FINDING: (id) => `/findings/${id}`, TASK: () => '/tasks', AUDIT: (id) => `/audits/${id}` };
+export function RecentActivityCard({ items }: { items: DashboardRecentlyUpdatedItem[] }) { return <DashboardCard title="Recently updated" description="The latest changes across your GRC program." tone="quiet"><div className="grid gap-x-8 lg:grid-cols-2">{items.length ? items.map((item) => <Link key={`${item.entityType}:${item.entityId}`} href={hrefs[item.entityType](item.entityId)} className="flex items-center gap-3 py-3.5"><span className="w-20 shrink-0 text-[10px] uppercase tracking-[0.08em] text-text-muted">{item.entityType}</span><span className="min-w-0 flex-1 truncate text-sm text-text-primary">{item.title}</span><span className="shrink-0 text-xs text-text-disabled">{new Date(item.updatedAt).toLocaleDateString()}</span></Link>) : <p className="py-5 text-sm text-text-muted">No recent GRC updates.</p>}</div></DashboardCard>; }

@@ -1,7 +1,6 @@
-import { ChevronRight } from "lucide-react"
-import { DashboardCard } from "./dashboard-card"
-import type { DashboardData } from "./dashboard-data"
+import Link from 'next/link';
+import { ChevronRight } from 'lucide-react';
+import { DashboardCard } from './dashboard-card';
+import type { DashboardTaskItem } from './dashboard-types';
 
-export function MyTasksCard({ tasks }: { tasks: DashboardData["tasks"] }) {
-  return <DashboardCard title="My tasks" className="lg:min-h-[356px]"><div className="space-y-1">{tasks.map((task) => <div key={task.title} className="flex items-center gap-4 py-3.5 first:pt-0 last:pb-0"><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium text-text-primary">{task.title}</p><p className="mt-1 text-xs text-text-muted">{task.entity}</p></div><div className="shrink-0 text-right"><p className={`text-xs ${task.status === "Due today" ? "text-warning" : "text-text-secondary"}`}>{task.due}</p><p className="mt-1 text-[10px] text-text-disabled">{task.status}</p></div><ChevronRight className="size-3 shrink-0 text-text-disabled" /></div>)}</div></DashboardCard>
-}
+export function MyTasksCard({ tasks }: { tasks: DashboardTaskItem[] }) { return <DashboardCard title="My tasks" description="Open remediation work assigned to you." className="lg:min-h-[356px]"><div className="space-y-1">{tasks.length ? tasks.map((task) => <Link key={task.id} href={`/tasks?search=${encodeURIComponent(task.taskNumber)}`} className="flex items-center gap-4 py-3.5 first:pt-0 last:pb-0"><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium text-text-primary">{task.title}</p><p className="mt-1 text-xs text-text-muted">{task.taskNumber} · {task.priority}</p></div><div className="shrink-0 text-right"><p className="text-xs text-text-secondary">{task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'No due date'}</p><p className="mt-1 text-[10px] text-text-disabled">{task.status.replaceAll('_', ' ')}</p></div><ChevronRight className="size-3 shrink-0 text-text-disabled" /></Link>) : <p className="py-5 text-sm text-text-muted">You have no open assigned tasks.</p>}</div><Link href="/tasks?assignedToMe=true" className="mt-5 inline-flex text-sm text-primary hover:underline">View all tasks <ChevronRight className="ml-1 size-4" /></Link></DashboardCard>; }

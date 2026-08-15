@@ -2,6 +2,10 @@ import type { TaskStatus } from '@prisma/client';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+export function taskSummaryWindow(now = new Date()) {
+  return { from: now, to: new Date(now.getTime() + 7 * DAY_MS) };
+}
+
 export function canTransitionTask(current: TaskStatus | string, next: TaskStatus | string): boolean {
   const transitions: Record<string, string[]> = {
     TODO: ['IN_PROGRESS', 'BLOCKED', 'CANCELLED'],
@@ -34,4 +38,9 @@ export function taskCompletionSummary(tasks: Array<{ status: string }>) {
     cancelled: count('CANCELLED'),
     completionPercentage: active.length ? Math.round((count('DONE') / active.length) * 100) : null,
   };
+}
+
+export function taskDueSoonState(task: { status: string; dueDate: Date | null }, now = new Date()) {
+  const { from, to } = taskSummaryWindow(now);
+  return ['TODO', 'IN_PROGRESS', 'BLOCKED'].includes(task.status) && Boolean(task.dueDate && task.dueDate >= from && task.dueDate <= to);
 }

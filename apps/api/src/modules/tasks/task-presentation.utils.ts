@@ -1,4 +1,4 @@
-import { taskCompletionSummary, taskOverdueState } from './tasks.utils';
+import { taskCompletionSummary, taskDueSoonState, taskOverdueState } from './tasks.utils';
 
 function memberSummary(member: any) { return member ? { membershipId: member.id, name: member.user?.email ?? member.id } : null; }
 
@@ -42,6 +42,8 @@ export function mapTaskSummary(tasks: Array<{ status: string; priority: string; 
     overdue,
     assignedToMe: assigned.length,
     assignedToMeOverdue: assigned.filter((task) => taskOverdueState(task, now).isOverdue).length,
+    dueSoon: tasks.filter((task) => taskDueSoonState(task, now)).length,
+    assignedToMeDueSoon: assigned.filter((task) => taskDueSoonState(task, now)).length,
   };
 }
 

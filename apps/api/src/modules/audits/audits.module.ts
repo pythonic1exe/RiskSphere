@@ -21,5 +21,6 @@ import { AuditsService } from './audits.service';
   imports: [PrismaModule, AuthModule, AuthorizationModule],
   controllers: [AuditsController, AuditMembersController, AuditScopeController, AuditTestsController, AuditTestEvidenceController, AuditTestObservationsController],
   providers: [AuditsService, AuditMembersService, AuditScopeService, AuditTestsService, AuditTestEvidenceService, AuditTestObservationsService],
+  exports: [AuditsService],
 })
 export class AuditsModule {}

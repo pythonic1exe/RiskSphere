@@ -11,5 +11,6 @@ import { EVIDENCE_STORAGE_SERVICE, LocalEvidenceStorageService } from './evidenc
   imports: [PrismaModule, AuthModule, AuthorizationModule],
   controllers: [EvidenceController],
   providers: [EvidenceService, LocalEvidenceStorageService, { provide: EVIDENCE_STORAGE_SERVICE, useExisting: LocalEvidenceStorageService }],
+  exports: [EvidenceService],
 })
 export class EvidenceModule {}

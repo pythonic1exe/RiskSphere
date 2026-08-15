@@ -1,10 +1,12 @@
-import { Check } from "lucide-react"
-import { DashboardCard } from "./dashboard-card"
-import type { DashboardData } from "./dashboard-data"
+import { ShieldCheck } from 'lucide-react';
+import { DashboardCard } from './dashboard-card';
 
-export function GrcOverviewCard({ data }: { data: DashboardData }) {
-  return <DashboardCard title="GRC overview" description="A clear view of where your program stands today.">
-    <div className="flex items-end justify-between gap-5"><div><p className="font-heading text-6xl tracking-[-0.1em] text-text-primary sm:text-7xl">{data.readiness}<span className="text-3xl text-primary">%</span></p><p className="mt-2 text-sm text-text-muted">Overall readiness</p></div><span className="mb-2 flex size-9 items-center justify-center rounded-full bg-success-muted text-success"><Check className="size-4" /></span></div>
-    <div className="mt-8 space-y-4">{data.readinessBreakdown.map((item) => <div key={item.label}><div className="mb-1.5 flex items-center justify-between gap-3 text-sm"><span className="text-text-secondary">{item.label}</span><span className="font-medium text-text-primary">{item.value}%</span></div><div className="h-1.5 overflow-hidden rounded-full bg-bg-elevated"><div className="h-full rounded-full bg-primary" style={{ width: `${item.value}%` }} /></div></div>)}</div>
-  </DashboardCard>
+type Posture = { risks: { active: number; highCritical: number; dueForReview: number }; compliance: { percentage: number; assessmentCoveragePercentage: number; controlCoveragePercentage: number }; controls: { active: number; overdueExecutions: number; dueSoonExecutions: number }; evidence: { current: number; expired: number; expiringSoon: number; traceabilityPercentage: number } };
+
+export function GrcOverviewCard({ posture }: { posture: Posture }) {
+  const rows = [['Risk', `${posture.risks.active} active`, `${posture.risks.highCritical} high / critical · ${posture.risks.dueForReview} due for review`], ['Compliance', `${posture.compliance.percentage}%`, `${posture.compliance.assessmentCoveragePercentage}% assessed`], ['Controls', `${posture.controls.active} active`, `${posture.controls.overdueExecutions} overdue · ${posture.controls.dueSoonExecutions} due soon`], ['Evidence', `${posture.evidence.current} current`, `${posture.evidence.expired} expired · ${posture.evidence.traceabilityPercentage}% traceable`]];
+  const compliance = Math.max(0, Math.min(100, posture.compliance.percentage));
+  const radius = 48;
+  const circumference = 2 * Math.PI * radius;
+  return <DashboardCard title="GRC posture" description="Independent indicators across the core program domains."><div className="flex flex-col gap-6 sm:flex-row sm:items-center"><div className="relative mx-auto size-36 shrink-0" role="img" aria-label={`Compliance coverage ${compliance}%`}><svg viewBox="0 0 120 120" className="size-full -rotate-90" aria-hidden="true"><circle cx="60" cy="60" r={radius} fill="none" stroke="var(--bg-app)" strokeWidth="10" /><circle cx="60" cy="60" r={radius} fill="none" stroke="var(--brand-primary)" strokeLinecap="round" strokeWidth="10" strokeDasharray={`${(compliance / 100) * circumference} ${circumference}`} /></svg><div className="absolute inset-[13px] flex flex-col items-center justify-center rounded-full border border-border-subtle/60 bg-bg-card"><span className="font-heading text-2xl text-text-primary">{compliance}%</span><span className="text-[10px] uppercase tracking-[0.08em] text-text-muted">Compliance</span></div></div><div className="min-w-0 flex-1 space-y-4">{rows.filter(([label]) => label !== 'Compliance').map(([label, value, detail]) => <div key={label} className="flex items-center gap-3"><div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-muted text-primary"><ShieldCheck className="size-4" /></div><div className="min-w-0 flex-1"><div className="flex items-baseline justify-between gap-3"><p className="text-sm font-medium text-text-primary">{label}</p><p className="text-sm text-text-primary">{value}</p></div><p className="mt-1 text-xs text-text-muted">{detail}</p></div></div>)}</div></div></DashboardCard>;
 }

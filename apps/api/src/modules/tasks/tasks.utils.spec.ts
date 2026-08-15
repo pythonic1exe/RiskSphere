@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { canTransitionTask, taskCompletionSummary, taskOverdueState } from './tasks.utils';
+import { canTransitionTask, taskCompletionSummary, taskDueSoonState, taskOverdueState } from './tasks.utils';
 
 describe('Task workflow utilities', () => {
   it('allows only the supported Task lifecycle transitions', () => {
@@ -22,5 +22,12 @@ describe('Task workflow utilities', () => {
   it('excludes cancelled Tasks from completion progress', () => {
     expect(taskCompletionSummary([{ status: 'DONE' }, { status: 'CANCELLED' }, { status: 'IN_PROGRESS' }])).toEqual({ total: 2, todo: 0, inProgress: 1, blocked: 0, done: 1, cancelled: 1, completionPercentage: 50 });
     expect(taskCompletionSummary([]).completionPercentage).toBeNull();
+  });
+
+  it('counts only open Tasks due within the seven-day summary window', () => {
+    const now = new Date('2026-08-15T00:00:00.000Z');
+    expect(taskDueSoonState({ status: 'TODO', dueDate: new Date('2026-08-20T00:00:00.000Z') }, now)).toBe(true);
+    expect(taskDueSoonState({ status: 'DONE', dueDate: new Date('2026-08-20T00:00:00.000Z') }, now)).toBe(false);
+    expect(taskDueSoonState({ status: 'TODO', dueDate: new Date('2026-08-24T00:00:00.000Z') }, now)).toBe(false);
   });
 });

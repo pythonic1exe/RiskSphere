@@ -68,6 +68,8 @@ export type TaskSummary = {
   overdue: number;
   assignedToMe: number;
   assignedToMeOverdue: number;
+  dueSoon: number;
+  assignedToMeDueSoon: number;
 };
 export type TaskActivity = {
   id: string;

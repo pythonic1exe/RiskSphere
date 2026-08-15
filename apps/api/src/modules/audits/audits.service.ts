@@ -17,6 +17,8 @@ import type { CreateAuditDto, ListAuditsDto, UpdateAuditDto } from './dto';
 import { canTransitionAudit, hasMeaningfulAuditScope } from './audits.utils';
 import { summarizeAuditTests } from './audit-presentation.utils';
 
+const AUDIT_SUMMARY_HORIZON_DAYS = 30;
+
 const AUDIT_WRITE_ROLES = [
   ORGANIZATION_ROLE_CODES.OWNER,
   ORGANIZATION_ROLE_CODES.GRC_ADMIN,
@@ -201,6 +203,16 @@ export class AuditsService {
       data: audits.map((audit) => this.mapAudit(audit)),
       pagination: { page, pageSize, total, totalPages: Math.ceil(total / pageSize) },
     };
+  }
+
+  async summary(access: OrganizationAccess, now = new Date()) {
+    const organizationId = this.organizationId(access);
+    const counts = await Promise.all([
+      ...Object.values(AuditStatus).map((status) => this.prisma.audit.count({ where: { organizationId, status } })),
+      this.prisma.audit.count({ where: { organizationId, status: { not: AuditStatus.CANCELLED }, plannedStartAt: { gte: now, lte: new Date(now.getTime() + AUDIT_SUMMARY_HORIZON_DAYS * 24 * 60 * 60 * 1000) } } }),
+    ]);
+    const [draft = 0, planned = 0, inProgress = 0, underReview = 0, completed = 0, cancelled = 0, upcoming = 0] = counts;
+    return { total: draft + planned + inProgress + underReview + completed + cancelled, draft, planned, inProgress, underReview, completed, cancelled, upcoming };
   }
 
   async create(access: OrganizationAccess, dto: CreateAuditDto) {

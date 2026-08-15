@@ -105,7 +105,7 @@ export class RisksService {
     return {
       total, active, criticalHigh, withoutAssessment, withoutTreatment, dueForReview,
       severityDistribution,
-      attention: attention.map((risk) => ({ id: risk.id, code: risk.code, title: risk.title, reason: riskAttentionReason({ severity: risk.assessments[0]?.severity ?? null, hasTreatment: Boolean(risk.treatment), nextReviewAt: risk.nextReviewAt }, now) ?? 'Review attention' })),
+      attention: attention.map((risk) => ({ id: risk.id, code: risk.code, title: risk.title, severity: risk.assessments[0]?.severity ?? null, dueAt: risk.nextReviewAt, reason: riskAttentionReason({ severity: risk.assessments[0]?.severity ?? null, hasTreatment: Boolean(risk.treatment), nextReviewAt: risk.nextReviewAt }, now) ?? 'Review attention' })),
     };
   }
 

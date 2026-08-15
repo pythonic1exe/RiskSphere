@@ -1,6 +1,6 @@
-import { DashboardCard } from "./dashboard-card"
-import type { DashboardData } from "./dashboard-data"
+import Link from 'next/link';
+import { DashboardCard } from './dashboard-card';
+import type { DashboardUpcomingItem } from './dashboard-types';
 
-export function UpcomingCard({ items }: { items: DashboardData["upcoming"] }) {
-  return <DashboardCard title="Upcoming" tone="quiet"><div className="space-y-4">{items.map((item) => <div key={item.title} className="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-3"><span className={`pt-0.5 text-[11px] font-medium uppercase tracking-[0.08em] ${item.date === "Today" ? "text-primary" : "text-text-muted"}`}>{item.date}</span><div className="min-w-0"><p className="truncate text-sm text-text-secondary">{item.title}</p><p className="mt-1 text-xs text-text-disabled">{item.type}</p></div></div>)}</div></DashboardCard>
-}
+const hrefs: Record<DashboardUpcomingItem['entityType'], (id: string) => string> = { RISK: (id) => `/risks/${id}`, CONTROL: (id) => `/controls/${id}`, EVIDENCE: (id) => `/evidence/${id}`, FINDING: (id) => `/findings/${id}`, TASK: () => '/tasks', AUDIT: (id) => `/audits/${id}` };
+export function UpcomingCard({ items }: { items: DashboardUpcomingItem[] }) { return <DashboardCard title="Upcoming" tone="quiet">{items.length ? <div className="space-y-4">{items.map((item) => <Link key={`${item.entityType}:${item.entityId}:${item.date}`} href={hrefs[item.entityType](item.entityId)} className="grid grid-cols-[5rem_minmax(0,1fr)] gap-3"><span className="pt-0.5 text-[11px] font-medium uppercase tracking-[0.08em] text-primary">{new Date(item.date).toLocaleDateString()}</span><span className="min-w-0"><span className="block truncate text-sm text-text-secondary">{item.title}</span><span className="mt-1 block text-xs text-text-disabled">{item.entityType} · {item.label}</span></span></Link>)}</div> : <p className="py-5 text-sm text-text-muted">Nothing upcoming in the next 30 days.</p>}</DashboardCard>; }

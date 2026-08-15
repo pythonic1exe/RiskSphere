@@ -28,5 +28,5 @@ export function WorkspaceHome() {
 
   if (loading || !organization) return <div className="flex min-h-screen items-center justify-center bg-bg-base text-sm text-text-muted">Loading your workspace...</div>
 
-  return <DashboardShell organizationName={organization.name} {...(user?.email ? { userEmail: user.email } : {})}><DashboardHome /></DashboardShell>
+  return <DashboardShell organizationName={organization.name} {...(user?.email ? { userEmail: user.email } : {})}><DashboardHome organizationId={organization.id} /></DashboardShell>
 }

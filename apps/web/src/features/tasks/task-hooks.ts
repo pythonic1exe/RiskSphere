@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as api from './task-api';
 import { taskKeys } from './task-query-keys';
+import { invalidateDashboardOverview } from '@/features/dashboard/dashboard-hooks';
 
 export function useTasks(organizationId: string | undefined, params: api.TaskListParams) {
   return useQuery({
@@ -19,31 +20,12 @@ export function useTaskSummary(organizationId: string | undefined) {
   });
 }
 export function useTaskDueSoonCount(organizationId: string | undefined) {
-  const from = new Date();
-  const to = new Date(from.getTime() + 7 * 86400000);
-  const statuses: api.TaskStatus[] = ['TODO', 'IN_PROGRESS', 'BLOCKED'];
   return useQuery({
-    queryKey: taskKeys.dueSoon(
-      organizationId ?? '',
-      from.toISOString().slice(0, 10),
-      to.toISOString().slice(0, 10),
-    ),
-    queryFn: async () => {
-      const results = await Promise.all(
-        statuses.map((status) =>
-          api.getTasks(organizationId!, {
-            status,
-            dueAfter: from.toISOString(),
-            dueBefore: to.toISOString(),
-            page: 1,
-            pageSize: 1,
-          }),
-        ),
-      );
-      return results.reduce((total, result) => total + result.pagination.total, 0);
-    },
+    queryKey: taskKeys.summary(organizationId ?? ''),
+    queryFn: () => api.getTaskSummary(organizationId!),
     enabled: Boolean(organizationId),
     staleTime: 30_000,
+    select: (summary) => summary.dueSoon,
   });
 }
 export function useTask(organizationId: string | undefined, taskId: string | null) {
@@ -97,6 +79,7 @@ function useTaskMutation<T>(
         void client.invalidateQueries({ queryKey: taskKeys.activity(organizationId, taskId) });
       }
       void client.invalidateQueries({ queryKey: taskKeys.all });
+      void invalidateDashboardOverview(client, organizationId);
     },
   });
 }

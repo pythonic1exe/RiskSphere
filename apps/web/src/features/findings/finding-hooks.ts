@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as api from './finding-api';
 import { findingKeys } from './finding-query-keys';
+import { invalidateDashboardOverview } from '@/features/dashboard/dashboard-hooks';
 
 export function useFindings(organizationId: string | undefined, params: api.FindingListParams) { return useQuery({ queryKey: findingKeys.list(organizationId ?? '', params), queryFn: () => api.getFindings(organizationId!, params), enabled: Boolean(organizationId), placeholderData: (previous) => previous }); }
 export function useFindingSummary(organizationId: string | undefined) { return useQuery({ queryKey: findingKeys.summary(organizationId ?? ''), queryFn: () => api.getFindingSummary(organizationId!), enabled: Boolean(organizationId), staleTime: 30_000 }); }
@@ -11,7 +12,7 @@ export function useFindingActivity(organizationId: string | undefined, findingId
 
 function useFindingMutation<T, R = api.Finding>(mutationFn: (body: T) => Promise<R>, organizationId: string | undefined, findingId?: string) {
   const client = useQueryClient();
-  return useMutation({ mutationFn, onSuccess: () => { if (!organizationId) return; void client.invalidateQueries({ queryKey: findingKeys.lists(organizationId) }); void client.invalidateQueries({ queryKey: findingKeys.summary(organizationId) }); if (findingId) void client.invalidateQueries({ queryKey: findingKeys.detail(organizationId, findingId) }); } });
+  return useMutation({ mutationFn, onSuccess: () => { if (!organizationId) return; void client.invalidateQueries({ queryKey: findingKeys.lists(organizationId) }); void client.invalidateQueries({ queryKey: findingKeys.summary(organizationId) }); if (findingId) void client.invalidateQueries({ queryKey: findingKeys.detail(organizationId, findingId) }); void invalidateDashboardOverview(client, organizationId); } });
 }
 export function useCreateFinding(organizationId: string | undefined) { return useFindingMutation((body: api.CreateFindingInput) => api.createFinding(organizationId!, body), organizationId); }
 export function useUpdateFinding(organizationId: string | undefined, findingId: string) { return useFindingMutation((body: api.UpdateFindingInput) => api.updateFinding(organizationId!, findingId, body), organizationId, findingId); }

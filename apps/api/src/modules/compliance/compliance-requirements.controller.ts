@@ -35,6 +35,12 @@ export class ComplianceRequirementsController {
     return this.complianceService.listRequirements(this.access(req), frameworkId, dto);
   }
 
+  @Get('summary')
+  @ApiOperation({ summary: 'Get organization-wide compliance summary' })
+  summary(@Req() req: AuthenticatedRequest) {
+    return this.complianceService.summary(this.access(req));
+  }
+
   @Get('requirements/:requirementId')
   @ApiOperation({ summary: 'Get an organization requirement' })
   @ApiParam({ name: 'requirementId', format: 'uuid' })
