@@ -37,9 +37,9 @@ export type DashboardData = {
 }
 
 export const dashboardNavigation: DashboardNavGroup[] = [
-  { label: "Overview", items: [{ label: "Dashboard", href: "/workspace", icon: LayoutDashboard }] },
+  { label: "Workspace Overview", items: [{ label: "Dashboard", href: "/workspace", icon: LayoutDashboard }] },
   {
-    label: "Management",
+    label: "Risk & Control",
     items: [
       { label: "Risks", href: "/risks", icon: ShieldAlert },
       { label: "Controls", href: "/controls", icon: SlidersHorizontal },
@@ -48,15 +48,15 @@ export const dashboardNavigation: DashboardNavGroup[] = [
     ],
   },
   {
-    label: "Assurance",
+    label: "Assurance & Findings",
     items: [
       { label: "Audits", href: "/audits", icon: ClipboardCheck },
       { label: "Findings", href: "/findings", icon: Flag },
     ],
   },
-  { label: "Work", items: [{ label: "Tasks", href: "/tasks", icon: ListChecks }] },
+  { label: "Remediation", items: [{ label: "Tasks", href: "/tasks", icon: ListChecks }] },
   {
-    label: "Workspace",
+    label: "Administration",
     items: [
       { label: "Organization", href: "/organization", icon: Users },
       { label: "Settings", href: "/settings", icon: Settings },

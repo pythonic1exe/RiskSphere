@@ -59,6 +59,7 @@ export function DashboardSidebar({ onLogout, onExpandedChange }: { onLogout: () 
         <nav className="flex-1 space-y-3 overflow-hidden px-6 pb-6 pt-7" aria-label="Primary navigation">
           {dashboardNavigation.map((group) => (
             <div key={group.label} className="space-y-1.5 pb-3 last:pb-0">
+              <motion.p aria-hidden={!expanded} animate={{ width: expanded ? expandedItemWidth : 0, opacity: expanded ? 1 : 0, x: expanded ? 0 : -8 }} transition={{ duration: reducedMotion ? 0 : 0.16, delay: expanded ? 0.04 : 0 }} className="overflow-hidden whitespace-nowrap px-1 pb-1 text-[10px] font-medium uppercase tracking-[0.13em] text-text-muted">{group.label}</motion.p>
               {group.items.map((item) => {
                 const active = pathname === item.href
                 const Icon = item.icon

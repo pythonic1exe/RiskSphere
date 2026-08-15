@@ -1,6 +1,8 @@
 export type AuthUser = {
   id: string
   email: string
+  displayName?: string | null
+  jobTitle?: string | null
   status: string
   createdAt: string
   updatedAt: string

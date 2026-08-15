@@ -16,6 +16,7 @@ import { EvidenceModule } from './modules/evidence/evidence.module';
 import { AuditsModule } from './modules/audits/audits.module';
 import { FindingsModule } from './modules/findings/findings.module';
 import { TasksModule } from './modules/tasks/tasks.module';
+import { SettingsModule } from './modules/settings/settings.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { TasksModule } from './modules/tasks/tasks.module';
     AuditsModule,
     FindingsModule,
     TasksModule,
+    SettingsModule,
   ],
 })
 export class AppModule {}

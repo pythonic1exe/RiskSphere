@@ -123,6 +123,8 @@ export class FindingsService {
     return this.prisma.$transaction(async (tx) => {
       const year = new Date().getUTCFullYear();
       const findingNumberValue = await this.allocateNumber(tx, organizationId, year);
+      const setting = tx.organizationSetting ? await tx.organizationSetting.findUnique({ where: { organizationId }, select: { findingDefaultDueDays: true } }) : null;
+      const dueDate = dto.dueDate ? new Date(dto.dueDate) : setting?.findingDefaultDueDays ? new Date(Date.now() + setting.findingDefaultDueDays * 86400000) : null;
       const finding = await tx.finding.create({ data: {
         organizationId,
         findingNumber: findingNumberValue,
@@ -135,7 +137,7 @@ export class FindingsService {
         impact: dto.impact?.trim() || null,
         recommendation: dto.recommendation?.trim() || null,
         remediationPlan: dto.remediationPlan?.trim() || null,
-        dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
+        dueDate,
         createdByMembershipId: access.membership.id,
         updatedByMembershipId: access.membership.id,
       } });

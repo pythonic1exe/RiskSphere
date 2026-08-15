@@ -117,7 +117,9 @@ export class RisksService {
       const existingCodes = await tx.risk.findMany({ where: { organizationId: access.organization.id }, select: { code: true } });
       const nextNumber = existingCodes.reduce((max, risk) => Math.max(max, Number(risk.code.replace(/^R-/, '')) || 0), 0) + 1;
       const code = `R-${String(nextNumber).padStart(3, '0')}`;
-      return tx.risk.create({ data: { organizationId: access.organization.id, code, title: dto.title.trim(), description: dto.description?.trim() || null, category: dto.category?.trim() || null, ownerMembershipId: dto.ownerMembershipId ?? null, createdByMembershipId: access.membership.id, updatedByMembershipId: access.membership.id } });
+      const setting = tx.organizationSetting ? await tx.organizationSetting.findUnique({ where: { organizationId: access.organization.id }, select: { riskReviewFrequencyDays: true } }) : null;
+      const nextReviewAt = setting?.riskReviewFrequencyDays ? new Date(Date.now() + setting.riskReviewFrequencyDays * 86400000) : null;
+      return tx.risk.create({ data: { organizationId: access.organization.id, code, title: dto.title.trim(), description: dto.description?.trim() || null, category: dto.category?.trim() || null, ownerMembershipId: dto.ownerMembershipId ?? null, nextReviewAt, createdByMembershipId: access.membership.id, updatedByMembershipId: access.membership.id } });
     });
   }
 

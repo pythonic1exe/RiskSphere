@@ -1,0 +1,5 @@
+import { z } from 'zod';
+export const profileSchema = z.object({ displayName: z.string().trim().min(2).or(z.literal('')), jobTitle: z.string().trim().max(120) });
+export const preferencesSchema = z.object({ timezone: z.string().trim().min(1).or(z.literal('')), dateFormat: z.enum(['DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']), startPage: z.enum(['/workspace', '/risks', '/controls', '/compliance', '/evidence', '/audits', '/findings', '/tasks', '/organization', '/settings']), density: z.enum(['COMFORTABLE', 'COMPACT']) });
+export const passwordSchema = z.object({ currentPassword: z.string().min(1), newPassword: z.string().min(8), confirmation: z.string().min(1) }).refine((value) => value.newPassword === value.confirmation, { path: ['confirmation'], message: 'Passwords do not match.' });
+export const organizationSettingsSchema = z.object({ riskReviewFrequencyDays: z.number().int().min(1).max(365).nullable(), findingDefaultDueDays: z.number().int().min(1).max(365).nullable(), defaultTaskDueDays: z.number().int().min(1).max(365).nullable() });

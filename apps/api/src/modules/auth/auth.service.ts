@@ -164,6 +164,8 @@ export class AuthService {
     return {
       id: user.id,
       email: user.email,
+      displayName: user.displayName,
+      jobTitle: user.jobTitle,
       status: user.status,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,

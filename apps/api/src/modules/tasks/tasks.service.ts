@@ -92,7 +92,9 @@ export class TasksService {
     await this.assertMembership(organizationId, dto.assigneeMembershipId, 'assigneeMembershipId');
     return this.prisma.$transaction(async (tx) => {
       const number = await this.allocateNumber(tx, organizationId, new Date().getUTCFullYear());
-      const task = await tx.task.create({ data: { organizationId, taskNumber: number, title: dto.title.trim(), description: dto.description?.trim() || null, priority: dto.priority, sourceType: dto.sourceType, findingId: dto.findingId, assigneeMembershipId: dto.assigneeMembershipId ?? null, dueDate: dto.dueDate ? new Date(dto.dueDate) : null, createdByMembershipId: access.membership.id, updatedByMembershipId: access.membership.id }, include: this.include() });
+      const setting = tx.organizationSetting ? await tx.organizationSetting.findUnique({ where: { organizationId }, select: { defaultTaskDueDays: true } }) : null;
+      const dueDate = dto.dueDate ? new Date(dto.dueDate) : setting?.defaultTaskDueDays ? new Date(Date.now() + setting.defaultTaskDueDays * 86400000) : null;
+      const task = await tx.task.create({ data: { organizationId, taskNumber: number, title: dto.title.trim(), description: dto.description?.trim() || null, priority: dto.priority, sourceType: dto.sourceType, findingId: dto.findingId, assigneeMembershipId: dto.assigneeMembershipId ?? null, dueDate, createdByMembershipId: access.membership.id, updatedByMembershipId: access.membership.id }, include: this.include() });
       await this.activities.append(tx, { organizationId, taskId: task.id, actorMembershipId: access.membership.id, type: TaskActivityType.CREATED, toStatus: TaskStatus.TODO });
       return mapTask(task);
     });

@@ -7,6 +7,12 @@ export class CurrentUserResponseDto {
   @ApiProperty()
   email!: string;
 
+  @ApiProperty({ nullable: true })
+  displayName!: string | null;
+
+  @ApiProperty({ nullable: true })
+  jobTitle!: string | null;
+
   @ApiProperty()
   status!: string;
 

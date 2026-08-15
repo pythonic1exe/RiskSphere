@@ -58,6 +58,11 @@ enum SessionStatus {
   EXPIRED
 }
 
+enum UserDensity {
+  COMFORTABLE
+  COMPACT
+}
+
 enum RiskStatus {
   DRAFT
   ACTIVE
@@ -291,15 +296,19 @@ enum TaskActivityType {
 }
 
 model User {
-  id                  String       @id @default(uuid()) @db.Uuid
-  email               String       @unique
-  passwordHash        String
-  status              UserStatus   @default(ACTIVE)
-  createdAt           DateTime     @default(now())
-  updatedAt           DateTime     @updatedAt
-  memberships         Membership[]
-  sessions            Session[]
-  acceptedInvitations Invitation[] @relation("InvitationAcceptedByUser")
+  id                     String                  @id @default(uuid()) @db.Uuid
+  email                  String                  @unique
+  displayName            String?
+  jobTitle               String?
+  passwordHash           String
+  status                 UserStatus              @default(ACTIVE)
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  memberships            Membership[]
+  sessions               Session[]
+  preference             UserPreference?
+  notificationPreference NotificationPreference?
+  acceptedInvitations    Invitation[]            @relation("InvitationAcceptedByUser")
 
   @@index([status])
 }
@@ -317,6 +326,39 @@ model Session {
 
   @@index([userId, status])
   @@index([expiresAt])
+}
+
+model UserPreference {
+  id         String      @id @default(uuid()) @db.Uuid
+  userId     String      @unique @db.Uuid
+  timezone   String?
+  dateFormat String?
+  startPage  String?
+  density    UserDensity @default(COMFORTABLE)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model NotificationPreference {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @unique @db.Uuid
+  inAppEnabled Boolean  @default(true)
+  emailEnabled Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model OrganizationSetting {
+  id                      String       @id @default(uuid()) @db.Uuid
+  organizationId          String       @unique @db.Uuid
+  riskReviewFrequencyDays Int?
+  findingDefaultDueDays   Int?
+  defaultTaskDueDays      Int?
+  createdAt               DateTime     @default(now())
+  updatedAt               DateTime     @updatedAt
+  organization            Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 }
 
 model Organization {
@@ -364,6 +406,7 @@ model Organization {
   taskActivities           TaskActivity[]
   organizationUnits        OrganizationUnit[]
   organizationUnitMembers  OrganizationUnitMember[]
+  setting                  OrganizationSetting?
 
   @@index([status, updatedAt])
 }
