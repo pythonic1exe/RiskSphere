@@ -131,7 +131,7 @@ function Lifecycle({ status }: { status: AuditStatus }) {
 }
 function Progress({ audit }: { audit: Audit }) {
   return (
-    <section className="border-y border-border-subtle/70 py-5">
+    <section className="py-1">
       <div className="flex items-baseline justify-between gap-4">
         <div>
           <p className="text-sm font-medium text-text-primary">Audit progress</p>
@@ -143,9 +143,9 @@ function Progress({ audit }: { audit: Audit }) {
           {audit.testSummary.completionPercent}%
         </span>
       </div>
-      <div className="mt-4 max-w-3xl h-1.5 bg-bg-elevated">
+      <div className="mt-4 h-1.5 max-w-3xl bg-[#1E293B]">
         <div
-          className="h-1.5 bg-primary"
+          className="h-1.5 bg-[#3B82F6]"
           style={{ width: `${audit.testSummary.completionPercent}%` }}
         />
       </div>
@@ -225,11 +225,19 @@ function Overview({
   const controlCount = scopes.filter((item) => item.type === 'CONTROL').length;
   return (
     <div className="space-y-8">
-      <Progress audit={audit} />
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(280px,.9fr)]">
-        <ResultSummary audit={audit} />
-        <AuditDetails audit={audit} />
-      </div>
+      <section className="overflow-hidden rounded-[11px] border border-[#263244] bg-[#111827]">
+        <div className="space-y-8 p-5 sm:p-6">
+          <Progress audit={audit} />
+          <div className="grid gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(280px,.9fr)] lg:divide-x lg:divide-[#263244]/70">
+            <div className="lg:pr-8">
+              <ResultSummary audit={audit} />
+            </div>
+            <div className="lg:pl-8">
+              <AuditDetails audit={audit} />
+            </div>
+          </div>
+        </div>
+      </section>
       {audit.description ? (
         <section className="border-t border-border-subtle/70 pt-7">
           <h3 className="font-heading text-lg text-text-primary">Description</h3>
@@ -305,7 +313,7 @@ function ScopeTab({
     onRefresh();
   };
   return (
-    <section className="space-y-5">
+    <section className="space-y-5 rounded-[11px] border border-[#263244] bg-[#111827] p-5 sm:p-6">
       <div className="flex items-end justify-between gap-3">
         <div>
           <h3 className="font-heading text-xl text-text-primary">Audit Scope</h3>
@@ -330,11 +338,14 @@ function ScopeTab({
                 ? 'Requirements'
                 : 'Controls'}
           </p>
-          <div className="divide-y divide-border-subtle/70 border-y border-border-subtle/70">
+          <div className="space-y-2">
             {scopes
               .filter((item) => item.type === type)
               .map((item) => (
-                <div key={item.id} className="flex items-center justify-between gap-3 py-3">
+                <div
+                  key={item.id}
+                  className="flex items-center justify-between gap-3 rounded-[10px] border border-[#263244]/70 bg-[#0F172A]/45 px-4 py-3"
+                >
                   <span>
                     <span className="block text-sm font-medium text-text-primary">
                       {item.framework?.name ??
@@ -372,7 +383,9 @@ function ScopeTab({
                 </div>
               ))}
             {!scopes.some((item) => item.type === type) ? (
-              <p className="py-4 text-sm text-text-muted">No {type.toLowerCase()} scope defined.</p>
+              <p className="rounded-[10px] border border-[#263244]/70 bg-[#0F172A]/45 px-4 py-4 text-sm text-text-muted">
+                No {type.toLowerCase()} scope defined.
+              </p>
             ) : null}
           </div>
         </div>
@@ -443,7 +456,7 @@ function TeamTab({
           Add member
         </Button>
       </div>
-      <div className="divide-y divide-border-subtle/70 border-y border-border-subtle/70">
+      <div className="space-y-2">
         {existing.map((item) => (
           <div key={item.id} className="flex items-center justify-between gap-3 py-4">
             <span className="flex min-w-0 items-start gap-3">
@@ -586,68 +599,81 @@ export function AuditDetail() {
           <ArrowLeft className="size-4" />
           Audits
         </button>
-        <header className="space-y-5 border-b border-border-subtle/70 pb-7">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <p className="text-xs font-medium tracking-[0.1em] text-text-muted">{audit.code}</p>
-              <div className="mt-2 flex flex-wrap items-center gap-3">
-                <h1 className="font-heading text-3xl font-medium tracking-[-0.05em] text-text-primary sm:text-4xl">
-                  {audit.title}
-                </h1>
-                <span className={`text-sm ${statusTone(audit.status)}`}>
-                  {auditStatusLabel[audit.status]}
-                </span>
-              </div>
-              <p className="mt-3 max-w-3xl text-sm text-text-secondary">
-                {audit.description ?? 'Assurance engagement workspace.'}
-              </p>
-              <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-text-muted">
-                <span>{auditTypeLabel[audit.type]}</span>
-                <span aria-hidden="true">·</span>
-                <span>{formatAuditDateRange(audit.plannedStartAt, audit.plannedEndAt)}</span>
-                <span aria-hidden="true">·</span>
-                <span>
-                  Lead: {humanizePerson(audit.leadAuditor?.name)}
-                  {personEmail(audit.leadAuditor?.name) ? (
-                    <span className="ml-2 text-xs text-text-disabled">
-                      {personEmail(audit.leadAuditor?.name)}
+        <header
+          className={`overflow-hidden rounded-[11px] border border-[#263244] bg-[#111827] ${
+            audit.status === 'UNDER_REVIEW' ? 'border-l-[3px] border-l-[#F59E0B]' : ''
+          }`}
+        >
+          <div className="space-y-5 p-5 sm:p-6">
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <p className="text-xs font-medium tracking-[0.1em] text-text-muted">{audit.code}</p>
+                <div className="mt-2 flex flex-wrap items-center gap-3">
+                  <h1 className="font-heading text-3xl font-medium tracking-[-0.05em] text-text-primary sm:text-4xl">
+                    {audit.title}
+                  </h1>
+                  {audit.status === 'UNDER_REVIEW' ? (
+                    <span className="inline-flex items-center gap-2 text-xs font-medium tracking-[0.06em] text-[#F59E0B]">
+                      <span className="size-1.5 rounded-full bg-[#F59E0B]" aria-hidden="true" />
+                      {auditStatusLabel[audit.status]}
                     </span>
-                  ) : null}
-                </span>
-              </div>
-              {audit.status === 'COMPLETED' ? (
-                <p className="mt-3 text-sm text-success">
-                  Completed {formatAuditDate(audit.completedAt)}
+                  ) : (
+                    <span className={`text-sm ${statusTone(audit.status)}`}>
+                      {auditStatusLabel[audit.status]}
+                    </span>
+                  )}
+                </div>
+                <p className="mt-3 max-w-3xl text-sm text-text-secondary">
+                  {audit.description ?? 'Assurance engagement workspace.'}
                 </p>
-              ) : null}
+                <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-text-muted">
+                  <span>{auditTypeLabel[audit.type]}</span>
+                  <span aria-hidden="true" className="text-[#263244]">|</span>
+                  <span>{formatAuditDateRange(audit.plannedStartAt, audit.plannedEndAt)}</span>
+                  <span aria-hidden="true" className="text-[#263244]">|</span>
+                  <span>
+                    Lead: {humanizePerson(audit.leadAuditor?.name)}
+                    {personEmail(audit.leadAuditor?.name) ? (
+                      <span className="ml-2 text-xs text-text-disabled">
+                        {personEmail(audit.leadAuditor?.name)}
+                      </span>
+                    ) : null}
+                  </span>
+                </div>
+                {audit.status === 'COMPLETED' ? (
+                  <p className="mt-3 text-sm text-success">
+                    Completed {formatAuditDate(audit.completedAt)}
+                  </p>
+                ) : null}
+              </div>
+              <div className="flex items-center gap-2">
+                {action ? <Button onClick={() => void runLifecycle()}>{action[0]}</Button> : null}
+                {audit.status !== 'COMPLETED' && audit.status !== 'CANCELLED' ? (
+                  <Button variant="outline" onClick={() => setEditOpen(true)}>
+                    Edit
+                  </Button>
+                ) : null}
+                {action && audit.status !== 'COMPLETED' && audit.status !== 'CANCELLED' ? (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Cancel audit"
+                    onClick={() => setCancelOpen(true)}
+                  >
+                    <MoreHorizontal className="size-5" />
+                  </Button>
+                ) : null}
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              {action ? <Button onClick={() => void runLifecycle()}>{action[0]}</Button> : null}
-              {audit.status !== 'COMPLETED' && audit.status !== 'CANCELLED' ? (
-                <Button variant="outline" onClick={() => setEditOpen(true)}>
-                  Edit
-                </Button>
-              ) : null}
-              {action && audit.status !== 'COMPLETED' && audit.status !== 'CANCELLED' ? (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label="Cancel audit"
-                  onClick={() => setCancelOpen(true)}
-                >
-                  <MoreHorizontal className="size-5" />
-                </Button>
-              ) : null}
+            <div className="overflow-x-auto border-t border-[#263244]/70 pt-5 pb-1">
+              <Lifecycle status={audit.status} />
             </div>
+            {audit.status === 'CANCELLED' ? (
+              <p className="text-sm text-danger">
+                This audit was cancelled. Historical records remain available.
+              </p>
+            ) : null}
           </div>
-          <div className="overflow-x-auto pb-1">
-            <Lifecycle status={audit.status} />
-          </div>
-          {audit.status === 'CANCELLED' ? (
-            <p className="text-sm text-danger">
-              This audit was cancelled. Historical records remain available.
-            </p>
-          ) : null}
         </header>
         <Tabs value={tab} onValueChange={setTab} className="space-y-7">
           <TabsList
@@ -771,7 +797,7 @@ function TestsPreview({
           New Test
         </Button>
       </div>
-      <div className="flex flex-wrap gap-2 border-y border-border-subtle/60 py-3">
+      <div className="flex flex-wrap gap-2 py-1">
         <Input
           value={search}
           onChange={(event) => {
@@ -827,13 +853,13 @@ function TestsPreview({
         </MorphNativeSelect>
       </div>
       {tests.length ? (
-        <div className="divide-y divide-border-subtle/70 border-y border-border-subtle/70">
+        <div className="space-y-2">
           {tests.map((test) => (
             <button
               type="button"
               key={test.id}
               onClick={() => onOpen(test.id)}
-              className="group grid w-full gap-3 py-4 text-left hover:bg-bg-hover/30 sm:grid-cols-[minmax(0,1.4fr)_minmax(180px,.8fr)_auto] sm:items-center"
+              className="group grid w-full gap-3 rounded-[10px] border border-[#263244]/70 bg-[#111827] px-4 py-4 text-left transition-colors hover:bg-bg-hover/30 sm:grid-cols-[minmax(0,1.4fr)_minmax(180px,.8fr)_auto] sm:items-center"
             >
               <span className="min-w-0">
                 <span className="block text-xs text-text-muted">{test.code}</span>
@@ -864,7 +890,7 @@ function TestsPreview({
           ))}
         </div>
       ) : (
-        <p className="border-y border-border-subtle/70 py-12 text-sm text-text-muted">
+        <p className="rounded-[10px] border border-[#263244]/70 bg-[#111827] px-4 py-12 text-sm text-text-muted">
           No audit tests have been created yet.
         </p>
       )}

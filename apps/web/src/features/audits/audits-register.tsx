@@ -65,6 +65,7 @@ function ActiveEngagements({
   isLoading: boolean;
   onOpen: (id: string) => void;
 }) {
+  const hasUnderReview = audits.some((audit) => audit.status === 'UNDER_REVIEW');
   return (
     <section className="space-y-4">
       <div>
@@ -81,18 +82,27 @@ function ActiveEngagements({
           <AuditRegisterSkeleton />
         </div>
       ) : audits.length ? (
-        <div className="divide-y divide-border-subtle/70 border-y border-border-subtle/70">
+        <div
+          className={`overflow-hidden rounded-[11px] border border-[#263244] bg-[#111827] ${
+            hasUnderReview ? 'border-l-[3px] border-l-[#F59E0B]' : ''
+          }`}
+        >
           {audits.map((audit) => (
             <button
               type="button"
               key={audit.id}
               onClick={() => onOpen(audit.id)}
-              className="group grid w-full gap-5 px-1 py-5 text-left transition-colors hover:bg-bg-hover/30 md:grid-cols-[minmax(0,1.1fr)_minmax(280px,.9fr)_minmax(150px,.45fr)] md:items-center"
+              className="group grid w-full gap-5 px-3 py-5 text-left transition-colors hover:bg-bg-hover/30 md:grid-cols-[minmax(0,1.1fr)_minmax(280px,.9fr)_minmax(150px,.45fr)] md:items-center"
             >
               <span className="min-w-0">
                 <span
-                  className={`text-[11px] font-medium uppercase tracking-[0.1em] ${statusTone(audit.status)}`}
+                  className={`inline-flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.1em] ${
+                    audit.status === 'UNDER_REVIEW' ? 'text-[#F59E0B]' : statusTone(audit.status)
+                  }`}
                 >
+                  {audit.status === 'UNDER_REVIEW' ? (
+                    <span className="size-1.5 rounded-full bg-[#F59E0B]" aria-hidden="true" />
+                  ) : null}
                   {auditStatusLabel[audit.status]}
                 </span>
                 <span className="mt-2 block truncate font-heading text-lg text-text-primary">
@@ -112,9 +122,9 @@ function ActiveEngagements({
                     {audit.testSummary.completionPercent}%
                   </span>
                 </span>
-                <span className="mt-2 block h-1 overflow-hidden bg-bg-elevated">
+                <span className="mt-2 block h-1 overflow-hidden bg-[#1E293B]">
                   <span
-                    className="block h-full bg-primary"
+                    className="block h-full bg-[#3B82F6]"
                     style={{ width: `${audit.testSummary.completionPercent}%` }}
                   />
                 </span>
@@ -123,7 +133,7 @@ function ActiveEngagements({
                   {audit.testSummary.fail} Fail
                 </span>
               </span>
-              <span className="flex items-center justify-end gap-3 text-sm text-text-muted">
+              <span className="flex items-center justify-end gap-3 border-t border-[#263244]/70 pt-3 text-sm text-text-muted md:border-l md:border-t-0 md:pl-5 md:pt-0">
                 <span>
                   <span className="block text-xs text-text-muted">Lead</span>
                   <span className="mt-1 block text-sm text-text-secondary">
